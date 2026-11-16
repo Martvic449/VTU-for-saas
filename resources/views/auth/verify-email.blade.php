@@ -1,0 +1,3 @@
+@extends('layouts.app')
+@section('title','Verify your email')
+@section('content')<div class="wrap"><div class="card form"><div style="width:48px;height:48px;border-radius:14px;background:#e7f7f0;color:#087451;display:grid;place-items:center;font-size:22px">✉</div><h1 style="margin-top:18px">Verify your email address</h1><p class="muted">We sent a secure verification link to <strong>{{ auth()->user()->email }}</strong>. Open the link to activate your account.</p><form method="post" action="{{ route('verification.send') }}">@csrf<button class="btn" type="submit">Resend verification email</button></form><form method="post" action="{{ route('logout') }}" style="margin-top:12px">@csrf<button class="btn secondary" type="submit">Sign out</button></form></div></div>@endsection

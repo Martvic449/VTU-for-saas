@@ -1,0 +1,5 @@
+@extends('layouts.app')
+@section('title','Platform overview')
+@section('content')<div class="wrap"><div class="row"><div><h1 class="title">Platform overview</h1><div class="muted">Live counts from the application database.</div></div><div class="row">@if(auth()->user()->hasAnyRole(['super-admin','operations-admin']))<a class="btn" href="{{ route('platform.tenants') }}">Manage tenants</a>@endif<a class="btn secondary" href="{{ route('platform.transactions') }}">Review transactions</a></div></div>
+<div class="grid">@foreach($metrics as $label=>$value)<div class="card"><div class="muted">{{ str_replace('_',' ',ucfirst($label)) }}</div><div class="metric">{{ number_format($value) }}</div></div>@endforeach</div>
+<div class="card"><h3 style="margin-top:0">Platform operations</h3><p class="muted">Provider integrations, payments and service fulfilment remain disabled until verified sandbox credentials and provider mappings are configured. No demo transaction data is displayed.</p></div></div>@endsection

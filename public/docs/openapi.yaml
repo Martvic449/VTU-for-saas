@@ -1,0 +1,247 @@
+openapi: 3.1.0
+info:
+  title: VTU SaaS Platform API
+  version: 1.0.0
+  description: Implemented API surface only. Payment gateway endpoints and service-specific validation remain unavailable until partner integrations pass sandbox acceptance.
+servers:
+  - url: https://{appHost}/api/v1
+    variables:
+      appHost:
+        default: localhost
+paths:
+  /auth/register:
+    post:
+      summary: Register a direct customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, password_confirmation]
+              properties:
+                name: { type: string, maxLength: 160 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12 }
+                password_confirmation: { type: string }
+                phone: { type: [string, 'null'] }
+      responses:
+        '202': { description: Customer created; email verification required; no token issued }
+        '422': { description: Validation error }
+  /auth/register-tenant:
+    post:
+      summary: Apply for a reseller tenant
+      responses:
+        '201': { description: Pending tenant and owner account created }
+        '422': { description: Validation error }
+  /auth/login:
+    post:
+      summary: Sign in; verified email required and privileged users require TOTP MFA
+      responses:
+        '200': { description: Authenticated or MFA setup required }
+        '422': { description: Invalid credentials or MFA code }
+  /auth/me:
+    get:
+      security: [{ sanctum: [] }]
+      summary: Current user profile
+      responses:
+        '200': { description: Profile }
+  /platform/dashboard:
+    get:
+      security: [{ sanctum: [] }]
+      summary: Platform dashboard counts
+      responses:
+        '200': { description: Counts from persisted application records }
+        '403': { description: Platform role/MFA required }
+  /platform/tenants:
+    get:
+      security: [{ sanctum: [] }]
+      summary: Paginated tenant listing
+      responses:
+        '200': { description: Tenant page }
+    post:
+      security: [{ sanctum: [] }]
+      summary: Create a pending tenant
+      responses:
+        '201': { description: Tenant created }
+  /platform/tenants/{tenant}/status:
+    patch:
+      security: [{ sanctum: [] }]
+      summary: Change tenant status with an audit reason
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Tenant status changed }
+  /tenants/{tenant}/domains:
+    post:
+      security: [{ sanctum: [] }]
+      summary: Add a custom tenant domain and receive a DNS TXT challenge
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema: { type: integer }
+      responses:
+        '201': { description: Domain and DNS challenge created }
+  /tenants/{tenant}/domains/{domain}/verify:
+    post:
+      security: [{ sanctum: [] }]
+      summary: Verify custom domain DNS ownership
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: domain
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: DNS verified; TLS remains pending }
+  /tenants/{tenant}/api-clients:
+    post:
+      security: [{ sanctum: [] }]
+      summary: Create a sandbox API client for an active tenant
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema: { type: integer }
+      responses:
+        '201': { description: Sandbox API client created }
+  /developer/account:
+    get:
+      security: [{ developerKey: [] }]
+      summary: Developer API client identity and scopes
+      responses:
+        '200': { description: Client details }
+  /developer/balance:
+    get:
+      security: [{ developerKey: [] }]
+      summary: Read available service credit
+      responses:
+        '200': { description: Balance in integer minor units }
+  /developer/transactions/{reference}:
+    get:
+      security: [{ developerKey: [] }]
+      summary: Read an owned transaction
+      parameters:
+        - in: path
+          name: reference
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Transaction status and price snapshot summary }
+        '404': { description: Not found in this API client's account scope }
+
+  /platform/providers:
+    get:
+      security: [{ sanctum: [] }]
+      summary: List configured provider connections (credentials are never returned)
+      responses:
+        '200': { description: Paginated provider connections }
+    post:
+      security: [{ sanctum: [] }]
+      summary: Create an inactive provider connection
+      responses:
+        '201': { description: Provider saved inactive }
+  /platform/services:
+    post:
+      security: [{ sanctum: [] }]
+      summary: Create an inactive service catalogue item
+      responses:
+        '201': { description: Service created inactive }
+  /platform/provider-mappings:
+    post:
+      security: [{ sanctum: [] }]
+      summary: Create an inactive supplier product mapping
+      responses:
+        '201': { description: Mapping created inactive }
+  /platform/pricing-rules:
+    post:
+      security: [{ sanctum: [] }]
+      summary: Create an effective-dated platform or tenant pricing rule in integer kobo
+      responses:
+        '201': { description: Pricing rule created }
+  /tenant/transactions:
+    get:
+      security: [{ sanctum: [] }]
+      summary: List transactions belonging to the current tenant
+      responses:
+        '200': { description: Tenant-scoped transaction page }
+  /tenant/purchases:
+    post:
+      security: [{ sanctum: [] }]
+      summary: Reserve tenant service credit and queue a supplier purchase
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, maxLength: 120 }
+      responses:
+        '202': { description: Accepted for asynchronous fulfilment; final status must be checked }
+        '422': { description: Validation, pricing, provider mapping or wallet rejection }
+  /developer/transactions:
+    post:
+      security: [{ developerKey: [] }]
+      summary: Submit a developer API purchase using the transactions:write scope
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, maxLength: 120 }
+      responses:
+        '202': { description: Accepted for asynchronous fulfilment; not a success confirmation }
+        '403': { description: API client or key lacks transactions:write }
+  /tenants/{tenant}/webhooks/{endpoint}/status:
+    patch:
+      security: [{ sanctum: [] }]
+      summary: Activate or deactivate an owned tenant webhook endpoint
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: endpoint
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Webhook status updated }
+        '403': { description: Active tenant owner membership required }
+        '422': { description: Invalid endpoint or status }
+  /tenants/{tenant}/webhooks:
+    get:
+      security: [{ sanctum: [] }]
+      summary: List webhook endpoints for the current tenant
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Tenant webhook endpoints; secrets are not returned }
+    post:
+      security: [{ sanctum: [] }]
+      summary: Register a signed webhook endpoint; secret returned once
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema: { type: integer }
+      responses:
+        '201': { description: Endpoint created and signing secret returned once }
+        '422': { description: Invalid or non-public HTTPS destination }
+components:
+  securitySchemes:
+    sanctum:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum token
+    developerKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
