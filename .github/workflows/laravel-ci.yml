@@ -97,6 +97,23 @@ jobs:
           composer install --no-interaction --prefer-dist --no-progress
           composer audit --locked
 
+      - name: Verify Hostinger public_html hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .htaccess
+          test -s public/.htaccess
+          test -s public/index.php
+          grep -Fq 'RewriteRule ^(.*)$ public/$1 [L]' .htaccess
+          grep -Fq 'vendor' .htaccess
+          grep -Fq 'composer' .htaccess
+          grep -Fq 'private-config' docs/HOSTINGER_PRIVATE_DEPLOYMENT.md
+          if grep -Eq 'APP_KEY=base64:[A-Za-z0-9+/=]{40,}|DB_PASSWORD=.+|VT_PASS_SECRET=.+|SMEPLUG_PRIVATE_KEY=.+'
+          then
+            echo "A secret-like value must not be committed in the repository."
+            exit 1
+          fi
+
       - name: Run Laravel tests
         run: php artisan test
 
