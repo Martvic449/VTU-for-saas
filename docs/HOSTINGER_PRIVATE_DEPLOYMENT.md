@@ -22,7 +22,7 @@ For `net.kokaacademyltd.com`, the intended layout is:
 └── public_html -> laravel-app/public
 ```
 
-The `public_html` symlink exposes only Laravel's public directory. The Git working tree, `.env`, `vendor`, application code, database files and logs remain outside the web root.
+The `public_html` symlink exposes only Laravel's public directory. The Git working tree, `.env`, `vendor`, application code, database files and logs remain outside the web root. The Laravel project root must remain a sibling of `public_html`, not a child of it; do not rely on a parent `.htaccess` denial because parent access rules can be inherited by a symlinked public directory.
 
 Hostinger's Git integration supports selecting a deployment root directory. Its help article says the default is `public_html` and that another valid directory can be selected. Hostinger web hosting does not let you change the account's home directory; this deployment uses a sibling application directory and a public symlink instead.
 
