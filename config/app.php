@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'providers' => Illuminate\\Support\\ServiceProvider::defaultProviders()->merge([
+        App\\Providers\\AppServiceProvider::class,
+    ])->toArray(),
+
     'name' => env('APP_NAME', 'VTU SaaS'), 'env' => env('APP_ENV', 'production'), 'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://localhost'), 'timezone' => env('APP_TIMEZONE', 'Africa/Lagos'), 'locale' => env('APP_LOCALE', 'en'),
     'legal_entity' => env('LEGAL_ENTITY_NAME', '[INSERT REGISTERED LEGAL BUSINESS NAME]'),
