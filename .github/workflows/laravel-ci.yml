@@ -49,6 +49,28 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      # Laravel's Composer scripts (notably package:discover) bootstrap the
+      # framework and require bootstrap/cache to exist and be writable.
+      # These runtime directories are intentionally not committed to Git.
+      - name: Prepare writable Laravel runtime directories
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 0022
+          mkdir -p \
+            bootstrap/cache \
+            storage/app/private \
+            storage/app/public \
+            storage/framework/cache/data \
+            storage/framework/sessions \
+            storage/framework/testing \
+            storage/framework/views \
+            storage/logs
+          chmod -R u+rwX bootstrap/cache storage
+          test -d bootstrap/cache
+          test -w bootstrap/cache
+          test -w storage
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
