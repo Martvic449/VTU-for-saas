@@ -24,9 +24,9 @@ The audited repository currently has:
 - `artisan` and `composer.json`: present.
 - `package.json` and Vite configuration: absent; no Node build is currently declared.
 - `composer.lock`: absent at the time of audit.
-- `.github/workflows/laravel-ci.yml`: absent at the time of audit; this patch adds it.
+- `.github/workflows/laravel-ci.yml`: added; it prepares Laravel runtime directories before Composer runs.
 
-The CI workflow resolves dependencies on its first run, uploads the generated `composer.lock` as the `composer-lock-bootstrap` artifact, then runs the Laravel test suite and Pint. After the first run:
+The CI workflow resolves dependencies on its first run, uploads the generated `composer.lock` as the `composer-lock-bootstrap` artifact, then runs the Laravel test suite and Pint. After a successful dependency-resolution run:
 
 1. Open the workflow run in GitHub Actions.
 2. Download `composer-lock-bootstrap`.
@@ -68,20 +68,36 @@ Never place `.env`, `app/`, `vendor/`, `storage/`, `database/`, `bootstrap/` or 
 
 ## Server-side setup after source is in place
 
-From the private Laravel project directory, after configuring the production `.env` and creating the MySQL database:
+Laravel deliberately excludes generated cache/runtime contents from source control. Composer's Laravel package-discovery scripts bootstrap the framework and require `bootstrap/cache` to exist and be writable. Create all required runtime directories **before** running Composer. From the private Laravel project directory:
 
 ```bash
+set -e
+umask 0022
+mkdir -p \
+  bootstrap/cache \
+  storage/app/private \
+  storage/app/public \
+  storage/framework/cache/data \
+  storage/framework/sessions \
+  storage/framework/testing \
+  storage/framework/views \
+  storage/logs
+chmod -R u+rwX bootstrap/cache storage
+
+# Install exactly the dependencies recorded in composer.lock.
 composer install --no-dev --prefer-dist --optimize-autoloader
+
+# Run only after reviewing the project's actual seeders and confirming
+# they create the intended initial production records (not demo/test data).
 php artisan key:generate
 php artisan migrate --force
-php artisan db:seed --force
 php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
 
-Run `php artisan key:generate` only on the first installation. Preserve the generated `APP_KEY` on all future deployments. Back up the database before migrations. Create the first platform administrator through the trusted CLI command documented in the main README.
+Do not run `composer update` on production. A committed `composer.lock` is required for reproducible deployments. Run `php artisan key:generate` only on the first installation. Preserve the generated `APP_KEY` on all future deployments. Back up the database before migrations. Do not run `db:seed` until the seeders have been reviewed and the production administrator/bootstrap process is confirmed; never seed demo data into production.
 
 Production `.env` must include `APP_ENV=production`, `APP_DEBUG=false`, a valid HTTPS `APP_URL`, Hostinger MySQL credentials, real SMTP settings and approved legal/contact details. Keep payment and VTU provider credentials out of GitHub and out of chat.
 
@@ -91,4 +107,4 @@ The application queues VTU submissions and webhook deliveries. A cron entry that
 
 ## Do not go live yet
 
-The repository's own production-readiness notes correctly identify further blockers: no committed Composer lock at audit time, no executed CI/test evidence, no MySQL-backed staging verification, no certified VTpass/SMEPlug or payment-gateway sandbox runs, no verified queue-worker arrangement, and unfinished legal/compliance and operational approvals. Deployment to a staging URL is not the same as approval to accept customer funds or submit live VTU orders.
+The repository's own production-readiness notes correctly identify further blockers: no committed Composer lock at audit time, no completed CI/test evidence, no MySQL-backed staging verification, no certified VTpass/SMEPlug or payment-gateway sandbox runs, no verified queue-worker arrangement, and unfinished legal/compliance and operational approvals. Deployment to a staging URL is not the same as approval to accept customer funds or submit live VTU orders.
