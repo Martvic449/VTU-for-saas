@@ -71,6 +71,13 @@ jobs:
           test -w bootstrap/cache
           test -w storage
 
+      - name: Prepare non-secret test environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .env.example
+          cp .env.example .env
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
