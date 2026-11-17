@@ -48,6 +48,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Laravel's Composer scripts (notably package:discover) bootstrap the
       # framework and require bootstrap/cache to exist and be writable.
