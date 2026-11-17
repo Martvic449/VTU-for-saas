@@ -144,9 +144,12 @@ jobs:
 
       - name: Check PHP formatting
         shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           set -euo pipefail
-          changed_php="$(git diff --name-only "${GITHUB_SHA}^1" "${GITHUB_SHA}" -- '*.php' | tr '\n' ' ')"
+          git fetch --no-tags origin "$BASE_SHA"
+          changed_php="$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.php' | tr '\n' ' ')"
           if [ -n "$changed_php" ]; then
             # Enforce formatting on this change set without making an unrelated
             # historical formatting backlog block every future deployment.
