@@ -1,125 +1,80 @@
-# Hostinger private Laravel deployment
+# Hostinger deployment (public_html Git target)
 
-This repository is a Laravel 12 application. Deploy the **application root** outside the domain's public document root. Do not deploy the repository root to `public_html`.
+This repository is a Laravel 12 application. Hostinger's Git integration will deploy the repository root into `public_html`. The root `.htaccess` added for this deployment forwards web requests into Laravel's `public/` directory and denies HTTP access to application source, dependencies, logs, and repository metadata.
+
+**Important security distinction:** this is a shared-hosting compatibility arrangement. Laravel's non-public files physically reside under `public_html`, but Apache/LiteSpeed access rules deny direct HTTP requests to those paths. A document root pointed directly at Laravel's `public/` directory, with the rest of the project outside the web root, remains the stronger architecture. Do not remove or bypass the root `.htaccess`.
 
 ## Target layout
 
-For `net.kokaacademyltd.com`, the intended layout is:
+For `net.kokaacademyltd.com`:
 
 ```text
 /home/ACCOUNT/domains/net.kokaacademyltd.com/
-├── laravel-app/                 # Hostinger Git deployment target
-│   ├── app/
-│   ├── bootstrap/
-│   ├── config/
-│   ├── database/
-│   ├── public/
-│   ├── storage/
-│   ├── vendor/
-│   ├── artisan
-│   └── composer.json
 ├── private-config/
-│   └── .env                     # production secrets; outside Git and web root
-└── public_html -> laravel-app/public
+│   └── .env                 # production secrets; outside Git and public_html
+└── public_html/             # Hostinger Git deployment root
+    ├── .htaccess            # routes requests into public/ and blocks private paths
+    ├── app/
+    ├── bootstrap/
+    ├── config/
+    ├── database/
+    ├── public/
+    │   ├── .htaccess
+    │   ├── index.php
+    │   └── assets...
+    ├── resources/
+    ├── routes/
+    ├── storage/
+    ├── vendor/              # installed with Composer on Hostinger
+    ├── artisan
+    ├── composer.json
+    └── composer.lock
 ```
 
-The `public_html` symlink exposes only Laravel's public directory. The Git working tree, `.env`, `vendor`, application code, database files and logs remain outside the web root. The Laravel project root must remain a sibling of `public_html`, not a child of it; do not rely on a parent `.htaccess` denial because parent access rules can be inherited by a symlinked public directory.
+The production environment file is deliberately outside the Git checkout and outside the web root. `bootstrap/app.php` detects `../private-config/.env` relative to the application root and loads it automatically. Local development and CI continue using the normal project-root `.env`.
 
-Hostinger's Git integration supports selecting a deployment root directory. Its help article says the default is `public_html` and that another valid directory can be selected. Hostinger web hosting does not let you change the account's home directory; this deployment uses a sibling application directory and a public symlink instead.
+## Before deploying
 
-References:
-- https://www.hostinger.com/support/1583302-how-to-deploy-a-git-repository-in-hostinger/
-- https://www.hostinger.com/support/1583494-what-is-the-path-to-your-website-s-root-home-directory-and-how-to-change-it/
+1. Keep Hostinger Auto-deployment **OFF** until the first deployment and verification are complete.
+2. Back up the current `public_html` before deploying. Hostinger warns that deployments overwrite files in the selected target directory. Keep a copy outside `public_html` if possible.
+3. Confirm the connected repository is `Martvic449/VTU-for-saas`, branch `main`, and root directory exactly `public_html`. Do not use the Node.js deployment flow.
+4. The deployment replaces repository-tracked files with the `main` branch contents. Do not keep production secrets, uploaded user files, or manually maintained content inside `public_html`.
 
-## Important: pause the current deployment before changing its target
+Hostinger's Git guide documents PHP/HTML Git deployment, the `public_html` default, custom root selection, manual redeploy, and overwrite behavior:
+https://www.hostinger.com/support/1583302-how-to-deploy-a-git-repository-in-hostinger/
 
-The current Hostinger Git integration points to `public_html`. Turn **Auto-deployment OFF** before merging deployment changes into `main` or changing the target. Otherwise, a push to `main` will redeploy the full Laravel repository into the current public directory.
+## Create the private production environment file
 
-Do not click Redeploy while the target is still `public_html`.
+Use Hostinger File Manager. Navigate to the directory containing `public_html`:
 
-## First-time Hostinger setup
+1. Create a sibling folder named `private-config` (not inside `public_html`).
+2. Inside it, create a file named exactly `.env`.
+3. Copy the required variable names from `public_html/.env.example` and enter the real production values in `private-config/.env`.
+4. Restrict folder/file permissions to the hosting account owner where the File Manager permits it (typically folder `700`, file `600`). Do not use `777`.
 
-1. Back up the current `public_html` directory before moving or renaming anything. Keep the backup outside the public web root if possible.
-2. In Hostinger File Manager, choose **Access all files of your web hosting**, then navigate to `domains/net.kokaacademyltd.com/` (the directory containing `public_html`).
-3. Create a sibling directory named `laravel-app`. Do not create it inside `public_html`.
-4. In the current Git page, keep Auto-deployment OFF and use the ⋮ menu to **Disconnect from repository**. Do not click Redeploy. This is necessary because Hostinger's Git setup chooses the root directory during connection; the current dashboard does not expose a safe in-place root-path edit.
-5. Reconnect GitHub, select the same `Martvic449/VTU-for-saas` repository and `main` branch, and set the root directory to `domains/net.kokaacademyltd.com/laravel-app`. Hostinger documents that Git can deploy to another valid directory on the hosting account. If this path is rejected, stop and send a screenshot; do not deploy to `public_html/laravel-app` as a substitute for a private sibling directory.
-6. Deploy and confirm the repository files, including `artisan` and `composer.json`, are inside `laravel-app`. The existing `public_html` is still untouched at this stage.
-7. Enable SSH in hPanel if it is not already enabled. Hostinger Business supports SSH. Connect to the account and navigate to the domain directory. Use the exact home path shown in Hostinger's SSH details.
-8. Confirm `laravel-app/public/index.php` and `laravel-app/public/.htaccess` exist.
-9. Before creating the symlink, open hPanel → PHP Configuration → PHP options → disableFunctions. Hostinger disables symlink functionality by default on Web/Cloud plans; remove only `symlink` from that disabled-functions list and save. Do not remove unrelated security restrictions. See https://www.hostinger.com/support/3212034-how-to-enable-disabled-php-functions-in-hostinger/.
-10. After the private app is deployed and backed up, rename the old `public_html` to a new backup name, then create a symlink so `public_html` points to `laravel-app/public`.
+Never commit, upload into `public_html`, paste into chat, or share the real `.env`. Do not send database passwords or provider keys in screenshots.
 
-Example commands (run only after checking the current directory and backup):
+Set at minimum:
 
-```bash
-cd ~/domains/net.kokaacademyltd.com
-pwd
-ls -la
-# Verify laravel-app exists and contains artisan before proceeding.
-test -f laravel-app/artisan
-test -f laravel-app/public/index.php
-test -f laravel-app/public/.htaccess
-
-# Preserve the current web root; do not delete it.
-test ! -e public_html_legacy_backup
-mv public_html public_html_legacy_backup
-ln -s laravel-app/public public_html
-
-# Verify the link and its target.
-readlink public_html
-test -f public_html/index.php
-```
-
-If the symlink command is rejected or the website does not serve through it, stop. Restore the previous web root with:
-
-```bash
-if [ -L public_html ]; then
-  rm public_html
-else
-  echo 'public_html is not a symlink; stop and inspect it before restoring.'
-  exit 1
-fi
-mv public_html_legacy_backup public_html
-```
-
-Do not run the restore command if `public_html` is a real directory containing new data; inspect it first. Do not use `rm -rf`.
-
-## Configure production secrets privately
-
-Create `private-config/.env` by copying `laravel-app/.env.example`. This is a sibling of the Git checkout, outside both Git and the public web root. The updated `bootstrap/app.php` automatically loads this file when it exists; local development and CI continue using the normal project-root `.env`. Never upload the real file to GitHub, paste it into chat, or put it in `public_html`.
-
-Create and protect it over SSH:
-
-```bash
-cd ~/domains/net.kokaacademyltd.com
-mkdir -p private-config
-chmod 700 private-config
-cp laravel-app/.env.example private-config/.env
-chmod 600 private-config/.env
-```
-
-Edit `private-config/.env` in File Manager or with a secure editor. Do not paste its contents into chat.
-
-At minimum, set:
-
+- `APP_NAME` to the chosen configurable product name
 - `APP_ENV=production`
 - `APP_DEBUG=false`
 - `APP_URL=https://net.kokaacademyltd.com`
-- Hostinger's exact MySQL host, database name, database username and password
-- Production-safe cache, session, queue and mail settings
-- Sandbox provider credentials until each integration is separately approved
+- `APP_KEY` (generate once after dependencies are installed; preserve it thereafter)
+- Hostinger's exact MySQL host, database name, username, and password
+- Production-safe cache, session, queue, and mail settings
+- Sandbox supplier/payment credentials only
 
-Use the exact DB host/name/user Hostinger displays. Do not use MySQL `root`. Keep the file owner-readable only where supported (typically mode `600`); directories should be owner-writable and not world-writable. Never use `777`.
+Use the exact database host/name/user shown by Hostinger. Do not use MySQL root. Keep all secrets in the private file.
 
-Keep `.env` out of Git. The repository's `.gitignore` already excludes `.env` and other environment files.
+## Install Composer dependencies and prepare Laravel
 
-## Install and prepare Laravel (SSH)
+Hostinger Git deployment transfers the repository; it does not install Composer dependencies or run Laravel migrations.
 
-Run from the private `laravel-app` directory after `.env` is configured:
+Connect with Hostinger SSH and run from the deployed project directory:
 
 ```bash
-cd ~/domains/net.kokaacademyltd.com/laravel-app
+cd ~/domains/net.kokaacademyltd.com/public_html
 
 mkdir -p bootstrap/cache \
   storage/app/private storage/app/public \
@@ -134,26 +89,26 @@ chmod -R u+rwX bootstrap/cache storage
 composer2 install --no-dev --prefer-dist --optimize-autoloader
 ```
 
-If Composer reports that `proc_open` is disabled while running scripts, do not enable broad shell-execution functions indiscriminately. Use the safe fallback:
+If the `composer2` command is not found, check Hostinger's SSH/Composer documentation or the Composer binary shown in hPanel. Do not run `composer update`; the committed `composer.lock` fixes the dependency versions.
+
+If Composer specifically reports that `proc_open` is disabled while executing scripts, use:
 
 ```bash
 composer2 install --no-dev --prefer-dist --optimize-autoloader --no-scripts
 php artisan package:discover --ansi
 ```
 
-Hostinger may disable `proc_open` by default on new accounts. Check PHP Configuration → PHP options → disableFunctions only if Composer reports that specific issue.
+Do not broadly remove PHP disabled-function restrictions.
 
-A committed `composer.lock` is required before production installation. CI bootstraps and commits this lock file to the pull request before merge. On Hostinger use Composer 2 (`composer2`), not Composer 1. Do not run `composer update` on the server.
-
-Generate the application key once only, after the production `.env` exists:
+Generate the application key once, after `private-config/.env` exists:
 
 ```bash
 php artisan key:generate
 ```
 
-Preserve that key for all future deployments. Never regenerate it on routine deploys.
+Preserve this key for every future deployment. Never regenerate it routinely.
 
-Before database migrations, verify the database is the intended production database and take a backup. Then run:
+Before running migrations, confirm the selected database is the intended database and take a backup. Then:
 
 ```bash
 php artisan migrate --force
@@ -164,19 +119,29 @@ php artisan route:cache
 php artisan view:cache
 ```
 
-Do not run seeders until their contents and the production administrator/bootstrap process have been reviewed. Do not seed demo data.
+Do not run seeders until their contents and the production administrator bootstrap process have been reviewed. Do not seed demo data.
 
-## Security checks after setup
+## Verify web-root protection before enabling customers
 
-- Opening `https://net.kokaacademyltd.com/.env` must return 403 or 404, never file contents.
-- `https://net.kokaacademyltd.com/vendor/`, `/app/`, `/storage/logs/` and `/.git/` must not expose files.
-- `public_html` must resolve to `laravel-app/public`.
-- `private-config/.env` must exist outside the Git checkout and public web root.
-- `APP_DEBUG=false` in production.
-- Do not enable live payments or VTU purchases until queue workers, scheduler, sandbox tests, security checks, legal/compliance and financial acceptance tests are complete.
+After deployment, open these paths in a private/incognito browser. They must return 403 or 404, never source contents:
 
-## Deployment updates
+- `https://net.kokaacademyltd.com/.env`
+- `https://net.kokaacademyltd.com/.env.example`
+- `https://net.kokaacademyltd.com/composer.json`
+- `https://net.kokaacademyltd.com/composer.lock`
+- `https://net.kokaacademyltd.com/artisan`
+- `https://net.kokaacademyltd.com/vendor/`
+- `https://net.kokaacademyltd.com/app/`
+- `https://net.kokaacademyltd.com/storage/logs/`
+- `https://net.kokaacademyltd.com/.git/`
 
-Hostinger Git auto-deployment updates the private `laravel-app` working tree. Because `public_html` is a symlink to `laravel-app/public`, public assets and the public entry point update with the same deployment. Keep the symlink intact.
+The normal domain root must load Laravel, and Laravel's public assets must load without exposing the `public/` folder as the site URL.
 
-Do not let Hostinger's Git root point back to `public_html`. Do not store production secrets or runtime logs in GitHub.
+If the site returns 403/500 after deployment, do not disable the protection rules or enable `APP_DEBUG` publicly. Check Hostinger's PHP error log and verify both root `.htaccess` and `public/.htaccess` exist.
+
+## Operational restrictions
+
+- Do not enable live VTU purchases or live deposits until the database, queue worker, scheduler, supplier/payment sandbox tests, reconciliation, security, legal/compliance, and financial acceptance checks are complete.
+- A cron scheduler is not a durable queue worker. Verify Hostinger's supported process/queue options before processing financial transactions.
+- Keep user uploads and other runtime data in persistent storage locations that are backed up and are not overwritten by Git deployments.
+- Keep Auto-deployment OFF until the first manual deployment and smoke/security checks succeed. Re-enable it only after confirming deployments do not erase runtime data or the private environment file.
