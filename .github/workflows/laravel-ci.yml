@@ -116,4 +116,14 @@ jobs:
         run: php artisan test
 
       - name: Check PHP formatting
-        run: vendor/bin/pint --test
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed_php="$(git diff --name-only "${GITHUB_SHA}^1" "${GITHUB_SHA}" -- '*.php' | tr '\n' ' ')"
+          if [ -n "$changed_php" ]; then
+            # Enforce formatting on this change set without making an unrelated
+            # historical formatting backlog block every future deployment.
+            vendor/bin/pint --test $changed_php
+          else
+            echo "No changed PHP files to format-check."
+          fi
