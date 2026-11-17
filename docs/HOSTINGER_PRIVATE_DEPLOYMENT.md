@@ -145,3 +145,33 @@ If the site returns 403/500 after deployment, do not disable the protection rule
 - A cron scheduler is not a durable queue worker. Verify Hostinger's supported process/queue options before processing financial transactions.
 - Keep user uploads and other runtime data in persistent storage locations that are backed up and are not overwritten by Git deployments.
 - Keep Auto-deployment OFF until the first manual deployment and smoke/security checks succeed. Re-enable it only after confirming deployments do not erase runtime data or the private environment file.
+
+
+## Automatic production migrations (GitHub Actions)
+
+The repository includes a guarded GitHub Actions workflow that runs **only after the Laravel CI workflow succeeds on `main`**. It connects to Hostinger over SSH, waits until Hostinger's asynchronous Git deployment has checked out the exact tested commit, verifies the Laravel app, Composer autoloader, private environment file, and writable cache directory, then runs:
+
+```bash
+php artisan migrate --force
+```
+
+It never runs `migrate:fresh`, `db:wipe`, or seeders. Laravel records applied migrations and runs only pending migrations. A failed check or failed migration stops the workflow and is visible in the GitHub Actions run.
+
+### One-time GitHub repository secrets
+
+In GitHub, open **Settings → Secrets and variables → Actions → New repository secret** and add these six secrets:
+
+| Secret | Value |
+|---|---|
+| `HOSTINGER_SSH_HOST` | Hostinger SSH hostname shown in hPanel |
+| `HOSTINGER_SSH_USER` | Hostinger SSH username |
+| `HOSTINGER_SSH_PORT` | SSH port shown in hPanel |
+| `HOSTINGER_SSH_PRIVATE_KEY` | Private key for a dedicated deployment key; add its matching public key to Hostinger's SSH authorized keys |
+| `HOSTINGER_SSH_KNOWN_HOSTS` | Verified SSH host-key line for the Hostinger SSH host and port |
+| `HOSTINGER_DEPLOY_PATH` | Absolute application path, e.g. `/home/ACCOUNT/domains/net.kokaacademyltd.com/public_html` |
+
+Do not put any of these values in the repository or in chat. Do not use the database password as an SSH password. Generate a dedicated SSH key pair for GitHub Actions, install only its public key in Hostinger, and keep its private key exclusively in the GitHub secret. Obtain the SSH host key from Hostinger's official support/hPanel guidance and verify its fingerprint before saving it as `HOSTINGER_SSH_KNOWN_HOSTS`.
+
+After adding all six secrets, the next successful push to `main` will trigger the workflow automatically. You can also start it from **Actions → Hostinger production migrations → Run workflow** after the secrets are configured. A manual run uses the current `main` commit and still performs the same deployment-commit check.
+
+If a run fails because the deployed commit was not detected, confirm Hostinger's Git deployment is connected to this repository's `main` branch and that the deploy path points to the repository root (the `public_html` directory). The workflow intentionally refuses to migrate an older or unknown checkout.
