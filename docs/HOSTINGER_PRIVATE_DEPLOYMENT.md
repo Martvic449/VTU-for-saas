@@ -110,10 +110,19 @@ mkdir -p bootstrap/cache \
 
 chmod -R u+rwX bootstrap/cache storage
 
-composer install --no-dev --prefer-dist --optimize-autoloader
+composer2 install --no-dev --prefer-dist --optimize-autoloader
 ```
 
-A committed `composer.lock` is required before production installation. Do not run `composer update` on the server.
+If Composer reports that `proc_open` is disabled while running scripts, do not enable broad shell-execution functions indiscriminately. Use the safe fallback:
+
+```bash
+composer2 install --no-dev --prefer-dist --optimize-autoloader --no-scripts
+php artisan package:discover --ansi
+```
+
+Hostinger may disable `proc_open` by default on new accounts. Check PHP Configuration → PHP options → disableFunctions only if Composer reports that specific issue.
+
+A committed `composer.lock` is required before production installation. CI bootstraps and commits this lock file to the pull request before merge. On Hostinger use Composer 2 (`composer2`), not Composer 1. Do not run `composer update` on the server.
 
 Generate the application key once only, after the production `.env` exists:
 
