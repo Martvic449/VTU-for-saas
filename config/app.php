@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'providers' => Illuminate\\Support\\ServiceProvider::defaultProviders()->merge([
-        App\\Providers\\AppServiceProvider::class,
+    'providers' => Illuminate\Support\ServiceProvider::defaultProviders()->merge([
+        App\Providers\AppServiceProvider::class,
     ])->toArray(),
 
     'name' => env('APP_NAME', 'VTU SaaS'), 'env' => env('APP_ENV', 'production'), 'debug' => (bool) env('APP_DEBUG', false),
