@@ -43,9 +43,10 @@ Do not click Redeploy while the target is still `public_html`.
 3. Create a sibling directory named `laravel-app`. Do not create it inside `public_html`.
 4. In hPanel → Websites → Manage site → Advanced → Git, change the repository root directory from `public_html` to the valid account-relative path `domains/net.kokaacademyltd.com/laravel-app`. If Hostinger rejects that path, stop and contact us with a screenshot; do not use `public_html/laravel-app` as a substitute for the private directory.
 5. Deploy the repository to that directory. Confirm the repository files, including `artisan` and `composer.json`, are inside `laravel-app`.
-6. Enable SSH in hPanel if it is not already enabled. Connect to the account and navigate to the domain directory. Use the exact home path shown in Hostinger's FTP/SSH details.
+6. Enable SSH in hPanel if it is not already enabled. Hostinger Business supports SSH. Connect to the account and navigate to the domain directory. Use the exact home path shown in Hostinger's SSH details.
 7. Confirm `laravel-app/public/index.php` and `laravel-app/public/.htaccess` exist.
-8. Rename the old `public_html` to a backup name only after confirming the backup is complete. Then create a symlink so `public_html` points to `laravel-app/public`.
+8. Before creating the symlink, open hPanel → PHP Configuration → PHP options → disableFunctions. Hostinger disables symlink functionality by default on Web/Cloud plans; remove only `symlink` from that disabled-functions list and save. Do not remove unrelated security restrictions. See https://www.hostinger.com/support/3212034-how-to-enable-disabled-php-functions-in-hostinger/.
+9. Rename the old `public_html` to a backup name only after confirming the backup is complete. Then create a symlink so `public_html` points to `laravel-app/public`.
 
 Example commands (run only after checking the current directory and backup):
 
