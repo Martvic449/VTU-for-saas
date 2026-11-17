@@ -1,0 +1,31 @@
+# Hostinger shared hosting: keep Laravel's application files private from HTTP.
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Never serve Laravel source, dependencies, logs, or repository metadata.
+    RewriteRule ^(?:app|bootstrap|config|database|docs|resources|routes|storage|tests|vendor|\.git|\.github)(?:/|$) - [F,NC,L]
+
+    # Never serve project/control files from the repository root.
+    RewriteRule ^(?:artisan|composer\.(?:json|lock)|phpunit\.xml|README(?:\.md)?|\.env(?:\..*)?|\.gitignore|\.gitattributes)(?:/|$) - [F,NC,L]
+
+    # Block any other hidden path (including accidental metadata files).
+    RewriteRule (^|/)\. - [F,L]
+
+    # The only HTTP document tree is Laravel's public/ directory.
+    # Existing static files are served from public/; other requests reach
+    # public/index.php through Laravel's own public/.htaccess.
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Defence in depth for sensitive root-level files.
+<FilesMatch "(?i)^(?:\.env(?:\..*)?|artisan|composer\.(?:json|lock)|phpunit\.xml|README(?:\.md)?|\.gitignore|\.gitattributes)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
