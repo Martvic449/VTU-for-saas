@@ -42,12 +42,13 @@ Do not click Redeploy while the target is still `public_html`.
 1. Back up the current `public_html` directory before moving or renaming anything. Keep the backup outside the public web root if possible.
 2. In Hostinger File Manager, choose **Access all files of your web hosting**, then navigate to `domains/net.kokaacademyltd.com/` (the directory containing `public_html`).
 3. Create a sibling directory named `laravel-app`. Do not create it inside `public_html`.
-4. In hPanel → Websites → Manage site → Advanced → Git, change the repository root directory from `public_html` to the valid account-relative path `domains/net.kokaacademyltd.com/laravel-app`. If Hostinger rejects that path, stop and contact us with a screenshot; do not use `public_html/laravel-app` as a substitute for the private directory.
-5. Deploy the repository to that directory. Confirm the repository files, including `artisan` and `composer.json`, are inside `laravel-app`.
-6. Enable SSH in hPanel if it is not already enabled. Hostinger Business supports SSH. Connect to the account and navigate to the domain directory. Use the exact home path shown in Hostinger's SSH details.
-7. Confirm `laravel-app/public/index.php` and `laravel-app/public/.htaccess` exist.
-8. Before creating the symlink, open hPanel → PHP Configuration → PHP options → disableFunctions. Hostinger disables symlink functionality by default on Web/Cloud plans; remove only `symlink` from that disabled-functions list and save. Do not remove unrelated security restrictions. See https://www.hostinger.com/support/3212034-how-to-enable-disabled-php-functions-in-hostinger/.
-9. Rename the old `public_html` to a backup name only after confirming the backup is complete. Then create a symlink so `public_html` points to `laravel-app/public`.
+4. In the current Git page, keep Auto-deployment OFF and use the ⋮ menu to **Disconnect from repository**. Do not click Redeploy. This is necessary because Hostinger's Git setup chooses the root directory during connection; the current dashboard does not expose a safe in-place root-path edit.
+5. Reconnect GitHub, select the same `Martvic449/VTU-for-saas` repository and `main` branch, and set the root directory to `domains/net.kokaacademyltd.com/laravel-app`. Hostinger documents that Git can deploy to another valid directory on the hosting account. If this path is rejected, stop and send a screenshot; do not deploy to `public_html/laravel-app` as a substitute for a private sibling directory.
+6. Deploy and confirm the repository files, including `artisan` and `composer.json`, are inside `laravel-app`. The existing `public_html` is still untouched at this stage.
+7. Enable SSH in hPanel if it is not already enabled. Hostinger Business supports SSH. Connect to the account and navigate to the domain directory. Use the exact home path shown in Hostinger's SSH details.
+8. Confirm `laravel-app/public/index.php` and `laravel-app/public/.htaccess` exist.
+9. Before creating the symlink, open hPanel → PHP Configuration → PHP options → disableFunctions. Hostinger disables symlink functionality by default on Web/Cloud plans; remove only `symlink` from that disabled-functions list and save. Do not remove unrelated security restrictions. See https://www.hostinger.com/support/3212034-how-to-enable-disabled-php-functions-in-hostinger/.
+10. After the private app is deployed and backed up, rename the old `public_html` to a new backup name, then create a symlink so `public_html` points to `laravel-app/public`.
 
 Example commands (run only after checking the current directory and backup):
 
@@ -61,6 +62,7 @@ test -f laravel-app/public/index.php
 test -f laravel-app/public/.htaccess
 
 # Preserve the current web root; do not delete it.
+test ! -e public_html_legacy_backup
 mv public_html public_html_legacy_backup
 ln -s laravel-app/public public_html
 
@@ -72,7 +74,12 @@ test -f public_html/index.php
 If the symlink command is rejected or the website does not serve through it, stop. Restore the previous web root with:
 
 ```bash
-rm public_html
+if [ -L public_html ]; then
+  rm public_html
+else
+  echo 'public_html is not a symlink; stop and inspect it before restoring.'
+  exit 1
+fi
 mv public_html_legacy_backup public_html
 ```
 
