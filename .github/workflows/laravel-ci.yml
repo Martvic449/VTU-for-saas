@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: laravel-ci-${{ github.ref }}
@@ -88,56 +88,14 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Cache Composer downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: composer-${{ runner.os }}-${{ hashFiles('composer.json', 'composer.lock') }}
-          restore-keys: |
-            composer-${{ runner.os }}-
-
-      - name: Resolve dependencies and install
-        id: resolve
+      - name: Validate and install locked dependencies
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f composer.lock ]; then
-            echo "lockfile_bootstrapped=false" >> "$GITHUB_OUTPUT"
-          else
-            composer update --no-interaction --prefer-dist --no-progress
-            echo "lockfile_bootstrapped=true" >> "$GITHUB_OUTPUT"
-          fi
+          test -f composer.lock
           composer validate --no-check-publish
           composer install --no-interaction --prefer-dist --no-progress
-
-      # The first CI run creates the lock file. Commit only that generated
-      # lock file to a same-repository PR branch; never write to a fork.
-      - name: Commit generated Composer lock to pull request
-        if: steps.resolve.outputs.lockfile_bootstrapped == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const { owner, repo } = context.repo;
-            const branch = context.payload.pull_request.head.ref;
-            const content = fs.readFileSync('composer.lock').toString('base64');
-            await github.rest.repos.createOrUpdateFileContents({
-              owner,
-              repo,
-              path: 'composer.lock',
-              message: 'build: commit resolved Composer dependency lock',
-              content,
-              branch
-            });
-
-      - name: Upload initial Composer lock (if missing from repository)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: composer-lock-bootstrap
-          path: composer.lock
-          if-no-files-found: ignore
-          retention-days: 7
+          composer audit --locked
 
       - name: Run Laravel tests
         run: php artisan test
