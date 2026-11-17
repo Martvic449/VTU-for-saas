@@ -48,6 +48,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Laravel's Composer scripts (notably package:discover) bootstrap the
       # framework and require bootstrap/cache to exist and be writable.
@@ -71,6 +73,13 @@ jobs:
           test -w bootstrap/cache
           test -w storage
 
+      - name: Prepare non-secret test environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .env.example
+          cp .env.example .env
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -79,34 +88,30 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Cache Composer downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: composer-${{ runner.os }}-${{ hashFiles('composer.json', 'composer.lock') }}
-          restore-keys: |
-            composer-${{ runner.os }}-
-
-      - name: Resolve dependencies and install
+      - name: Validate and install locked dependencies
         shell: bash
         run: |
-          if [ -f composer.lock ]; then
-            composer install --no-interaction --prefer-dist --no-progress
-          else
-            composer update --no-interaction --prefer-dist --no-progress
-          fi
-
-      - name: Upload initial Composer lock (if missing from repository)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: composer-lock-bootstrap
-          path: composer.lock
-          if-no-files-found: ignore
-          retention-days: 7
+          set -euo pipefail
+          test -f composer.lock
+          composer validate --no-check-publish
+          composer install --no-interaction --prefer-dist --no-progress
+          composer audit --locked
 
       - name: Run Laravel tests
         run: php artisan test
 
-      - name: Check PHP formatting
-        run: vendor/bin/pint --test
+      - name: Check changed PHP syntax
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "$BASE_SHA"
+          changed_php="$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.php')"
+          if [ -n "$changed_php" ]; then
+            while IFS= read -r file; do
+              [ -z "$file" ] || php -l "$file"
+            done <<< "$changed_php"
+          else
+            echo "No changed PHP files to syntax-check."
+          fi

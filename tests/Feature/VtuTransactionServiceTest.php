@@ -91,6 +91,16 @@ it('binds an idempotency key to the service as well as the customer payload', fu
         'service_code' => 'TEST-DATA-OTHER', 'category' => 'data', 'name' => 'Other test product', 'status' => 'inactive',
         'validation_schema' => json_encode(['phone' => ['required', 'regex:/^080[0-9]{8}$/']]), 'created_at' => now(), 'updated_at' => now(),
     ]);
+    $providerId = DB::table('providers')->insertGetId([
+        'code' => 'test-provider-idempotency', 'name' => 'Test Provider', 'adapter' => 'test', 'environment' => 'sandbox',
+        'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+    ]);
+    DB::table('provider_services')->insert([
+        'provider_id' => $providerId, 'service_catalogue_id' => $firstServiceId,
+        'provider_product_code' => 'TEST-AIRTIME-IDEMPOTENCY', 'status' => 'active',
+        'created_at' => now(), 'updated_at' => now(),
+    ]);
+
     $service = app(VtuTransactionService::class);
     $service->reserve($walletId, $firstServiceId, 'same-key', ['phone' => '08000000000']);
     expect(fn () => $service->reserve($walletId, $secondServiceId, 'same-key', ['phone' => '08000000000']))

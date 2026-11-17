@@ -21,7 +21,8 @@ it('keeps VTpass ambiguous supplier states pending rather than treating response
     $provider = new Provider(['environment' => 'sandbox', 'settings' => ['base_url' => 'https://sandbox.vtpass.com/api'],
         'credentials_encrypted' => ['api_key' => 'sandbox-api-key', 'secret_key' => 'sandbox-secret']]);
     Http::fake(['https://sandbox.vtpass.com/api/pay' => Http::response(['code' => '000', 'response_description' => 'Processing'], 200)]);
-    $result = (new VtpassVtuProvider($provider))->purchase('mtn_airtime', ['product_code' => 'mtn'], '202611151601TESTREFERENCE2');
+    $result = (new VtpassVtuProvider($provider))->purchase('mtn_airtime', ['product_code' => 'mtn',
+        '_provider_mapping' => ['service_id' => 'mtn']], '202611151601TESTREFERENCE2');
     expect($result['outcome'])->toBe('pending');
 });
 

@@ -11,13 +11,14 @@ it('normalizes only configured terminal statuses and leaves unknown outcomes pen
             'success_statuses' => ['OK'], 'failed_statuses' => ['NO']],
         'credentials_encrypted' => ['api_token' => 'sandbox-token-value'],
     ]);
-    Http::fake(['https://supplier.example/purchase' => Http::response(['data' => ['state' => 'OK', 'ref' => 'P-123', 'cost_minor' => 980], 'message' => 'done'], 200)]);
+    Http::fakeSequence('https://supplier.example/purchase')
+        ->push(['data' => ['state' => 'OK', 'ref' => 'P-123', 'cost_minor' => 980], 'message' => 'done'], 200)
+        ->push(['data' => ['state' => 'QUEUED', 'ref' => 'P-124']], 200);
     $result = (new ConfiguredHttpVtuProvider($provider))->purchase('airtime_100', ['product_code' => 'A100', 'phone' => '08000000000'], 'VTU-CLIENT-1');
     expect($result['outcome'])->toBe('successful')
         ->and($result['provider_reference'])->toBe('P-123')
         ->and($result['data']['actual_cost_minor'])->toBe(980);
 
-    Http::fake(['https://supplier.example/purchase' => Http::response(['data' => ['state' => 'QUEUED', 'ref' => 'P-124']], 200)]);
     $pending = (new ConfiguredHttpVtuProvider($provider))->purchase('airtime_100', ['product_code' => 'A100'], 'VTU-CLIENT-2');
     expect($pending['outcome'])->toBe('pending');
 });
