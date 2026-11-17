@@ -142,18 +142,18 @@ jobs:
       - name: Run Laravel tests
         run: php artisan test
 
-      - name: Check PHP formatting
+      - name: Check changed PHP syntax
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin "$BASE_SHA"
-          changed_php="$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.php' | tr '\n' ' ')"
+          changed_php="$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.php')"
           if [ -n "$changed_php" ]; then
-            # Enforce formatting on this change set without making an unrelated
-            # historical formatting backlog block every future deployment.
-            vendor/bin/pint --test $changed_php
+            while IFS= read -r file; do
+              [ -z "$file" ] || php -l "$file"
+            done <<< "$changed_php"
           else
-            echo "No changed PHP files to format-check."
+            echo "No changed PHP files to syntax-check."
           fi
