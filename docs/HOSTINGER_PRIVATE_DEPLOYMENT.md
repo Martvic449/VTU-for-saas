@@ -16,9 +16,10 @@ For `net.kokaacademyltd.com`, the intended layout is:
 │   ├── public/
 │   ├── storage/
 │   ├── vendor/
-│   ├── .env                     # created on Hostinger only; never committed
 │   ├── artisan
 │   └── composer.json
+├── private-config/
+│   └── .env                     # production secrets; outside Git and web root
 └── public_html -> laravel-app/public
 ```
 
@@ -79,7 +80,19 @@ Do not run the restore command if `public_html` is a real directory containing n
 
 ## Configure production secrets privately
 
-Create `laravel-app/.env` by copying `laravel-app/.env.example` inside the private application directory. Never upload the real file to GitHub, paste it into chat, or put it in `public_html`.
+Create `private-config/.env` by copying `laravel-app/.env.example`. This is a sibling of the Git checkout, outside both Git and the public web root. The updated `bootstrap/app.php` automatically loads this file when it exists; local development and CI continue using the normal project-root `.env`. Never upload the real file to GitHub, paste it into chat, or put it in `public_html`.
+
+Create and protect it over SSH:
+
+```bash
+cd ~/domains/net.kokaacademyltd.com
+mkdir -p private-config
+chmod 700 private-config
+cp laravel-app/.env.example private-config/.env
+chmod 600 private-config/.env
+```
+
+Edit `private-config/.env` in File Manager or with a secure editor. Do not paste its contents into chat.
 
 At minimum, set:
 
@@ -151,7 +164,7 @@ Do not run seeders until their contents and the production administrator/bootstr
 - Opening `https://net.kokaacademyltd.com/.env` must return 403 or 404, never file contents.
 - `https://net.kokaacademyltd.com/vendor/`, `/app/`, `/storage/logs/` and `/.git/` must not expose files.
 - `public_html` must resolve to `laravel-app/public`.
-- `laravel-app/.env` must exist only in the private application directory.
+- `private-config/.env` must exist outside the Git checkout and public web root.
 - `APP_DEBUG=false` in production.
 - Do not enable live payments or VTU purchases until queue workers, scheduler, sandbox tests, security checks, legal/compliance and financial acceptance tests are complete.
 
