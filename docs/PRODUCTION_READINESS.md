@@ -12,18 +12,18 @@ This checklist is intentionally conservative. A checked source-code task is not 
 
 ## Infrastructure
 
-- [ ] Confirm the selected host supports the required PHP version/extensions, MySQL version, queue worker, cron scheduler, outbound HTTPS, TLS, storage, backups and resource envelope. Hostinger Business documents SSH, Composer 2 and cron, but this does not certify a persistent queue worker or Redis; arrange and test a managed worker or other supervised worker host.
+- [ ] Confirm the selected host supports the required PHP version/extensions, MySQL version, queue worker, cron scheduler, outbound HTTPS, TLS, storage, backups and resource envelope. Hostinger Business supports scheduled cron execution but does not provide the same guarantees as a supervised persistent worker. The repository now includes a bounded cron runner; verify it on the actual account and move queue processing to a managed worker/VPS if it cannot reliably process jobs.
 - [ ] Use separate development, staging and production environments, databases, app keys and credentials.
 - [ ] Configure `APP_ENV=production`, `APP_DEBUG=false`, a unique strong `APP_KEY`, HTTPS, secure cookies, trusted proxies and strict allowed hosts.
-- [ ] Use a durable queue connection and supervised worker; configure scheduler invocation every minute; alert on failed jobs and queue backlog.
+- [ ] Use the database queue and the bounded Hostinger cron runner documented in HOSTINGER_PRIVATE_DEPLOYMENT.md, or a supervised worker on a suitable host. Configure scheduler invocation every minute and alert on failed jobs and queue backlog.
 - [ ] Configure private object storage if KYC documents are later supported; define encryption, retention, deletion and access policies.
 - [ ] Configure encrypted database/files backups and prove point-in-time recovery/restore in an isolated environment.
 - [ ] Configure central error tracking, structured logs, redaction, uptime/latency/queue/provider/database alerts and incident escalation.
-- [ ] Add outbound network egress controls for webhook delivery and provider calls; protect against DNS rebinding and destination changes.
+- [ ] The webhook/configurable-provider URL policy pins validated DNS results to the HTTP connection to mitigate DNS rebinding. Add host-level outbound egress controls where available and retain independent security review.
 
 ## Application and security verification
 
-- [ ] Run the GitHub Actions bootstrap workflow, download and commit its generated `composer.lock`, then install dependencies from that committed lock file; run migrations against MySQL 8+; seed only required roles and chart of accounts; create initial platform admin from trusted CLI.
+- [ ] The committed composer.lock is now installed by CI and audited. Run the guarded Hostinger production migration workflow, which applies pending migrations and the reviewed idempotent DatabaseSeeder (roles/permissions, chart of accounts and inactive catalogue templates only), then create the initial platform admin from trusted CLI.
 - [ ] Run the complete automated test suite and static analysis. Add MySQL-backed concurrency tests for wallet spending, duplicate deposit callbacks, duplicate provider events and journal posting.
 - [ ] Verify every role/permission boundary, tenant host resolution, custom host ownership/TLS, tenant suspension and cross-tenant IDOR resistance.
 - [ ] Complete independent code review and penetration testing; remediate critical/high findings.
@@ -50,5 +50,7 @@ This checklist is intentionally conservative. A checked source-code task is not 
 - [ ] Obtain explicit business, finance, legal/compliance and technical sign-off before public production or live customer funds.
 
 ## Current known blockers
+
+The last main-branch CI run passed 28 tests (88 assertions) against MySQL 8, and Composer audit reported no known advisories. The guarded Hostinger migration workflow is present but has not connected because its six GitHub Actions deployment secrets are not yet configured. See the current engineering audit and Hostinger runbook for exact status.
 
 VTpass, SMEPlug, Paystack, OPay and Moniepoint/Monnify have been selected. VTpass, Paystack, OPay Cashier and Monnify adapters are implemented, but no merchant credentials or sandbox test evidence were supplied. SMEPlug request contract has been implemented from the supplied Postman collection; its collection contains no saved response examples, so exact response status/reference paths and terminal values require real sandbox responses. None of these integrations is sandbox-certified. These blockers cannot be completed honestly with placeholder credentials or fabricated test results.
