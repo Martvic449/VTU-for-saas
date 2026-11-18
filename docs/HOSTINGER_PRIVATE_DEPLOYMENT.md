@@ -108,7 +108,7 @@ Do not run composer update. Do not delete the cache directories. Do not use 777.
 The GitHub Actions workflow named **Hostinger production migrations** is guarded:
 
 1. It runs only after Laravel CI succeeds on main, or when manually dispatched.
-2. It validates all six SSH/deployment secrets before connecting.
+2. On automatic workflow_run events, it safely skips deployment if the six SSH/deployment secrets have not yet been configured. A manual Run workflow attempt fails clearly until all six secrets exist.
 3. It waits until Hostinger's Git checkout is the exact commit that passed CI.
 4. It verifies artisan, vendor/autoload.php, ../private-config/.env, and writable bootstrap/cache.
 5. It runs php artisan migrate --force.

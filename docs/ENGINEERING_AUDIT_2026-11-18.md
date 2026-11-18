@@ -29,7 +29,9 @@ These are implemented code paths, not proof that all product requirements have p
 6. Unknown-host enforcement defaulted to false even in production unless explicitly configured.
 7. Webhook and configurable-provider URL validation checked DNS addresses, but the subsequent HTTP client performed a fresh DNS lookup. That left a DNS-rebinding window to private network destinations.
 
-## Remediation included in this audit branch
+## Remediation merged into main
+
+The remediation set was merged as PR #8 at commit f5e712db78e42dd0465f1574747eebcfa3a8c25b. Its pull-request CI passed 31 tests (95 assertions) against MySQL 8, Composer audit reported no known advisories, the Hostinger runner passed bash syntax validation, and all changed PHP files passed php -l.
 
 - Added tracked .gitignore placeholders for Laravel storage runtime directories so Git deployment creates the paths without committing runtime data.
 - Added bootstrap/hostinger-cron.sh, a bounded Hostinger runner for schedule:run and database queue:work. It checks PHP/runtime prerequisites and uses flock to prevent overlapping workers.
@@ -40,7 +42,7 @@ These are implemented code paths, not proof that all product requirements have p
 - Updated the Hostinger migration workflow to run the reviewed, idempotent DatabaseSeeder after successful migrations. It creates roles/permissions, the chart of accounts and inactive service templates only; it does not create demo balances, transactions or users.
 - Consolidated the Hostinger instructions into one authoritative runbook and marked older contradictory guides as superseded.
 
-These changes must pass the pull-request CI before merge. Do not describe them as deployed until the PR is merged and Hostinger has deployed that commit.
+The source changes are now in main. They are not yet deployed to Hostinger; the Hostinger deployment and migration workflow still needs its SSH secrets and a verified run.
 
 ## Repository visibility
 
