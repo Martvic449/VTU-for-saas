@@ -42,6 +42,10 @@ These are implemented code paths, not proof that all product requirements have p
 
 These changes must pass the pull-request CI before merge. Do not describe them as deployed until the PR is merged and Hostinger has deployed that commit.
 
+## Repository visibility
+
+The GitHub repository is currently public. No production .env or credentials were intentionally added to this audit branch, but the complete application source is publicly readable. If the code is proprietary, change repository visibility to private and verify Hostinger's GitHub App retains access. This audit does not change repository visibility because that is a business/IP decision and can affect the existing deployment integration.
+
 ## Confirmed deployment blocker
 
 The Hostinger production migration workflow run 44200659507 failed in its first step because all six SSH/deployment secrets were empty. The SSH setup and remote migration steps were skipped. It did not connect to Hostinger and did not modify the database.
