@@ -1,177 +1,193 @@
-# Hostinger deployment (public_html Git target)
+# Hostinger Business deployment runbook
 
-This repository is a Laravel 12 application. Hostinger's Git integration will deploy the repository root into `public_html`. The root `.htaccess` added for this deployment forwards web requests into Laravel's `public/` directory and denies HTTP access to application source, dependencies, logs, and repository metadata.
+**This is the single authoritative Hostinger deployment guide for this repository.** Older Hostinger notes are superseded by this file.
 
-**Important security distinction:** this is a shared-hosting compatibility arrangement. Laravel's non-public files physically reside under `public_html`, but Apache/LiteSpeed access rules deny direct HTTP requests to those paths. A document root pointed directly at Laravel's `public/` directory, with the rest of the project outside the web root, remains the stronger architecture. Do not remove or bypass the root `.htaccess`.
+## 1. Deployment layout currently supported
 
-## Target layout
+The current Hostinger Business setup uses the Git integration target public_html. The Laravel project root is deployed there, but the root .htaccess forwards web requests into Laravel's public/ directory and denies direct HTTP access to application source, dependencies, runtime storage, and repository metadata.
 
-For `net.kokaacademyltd.com`:
+Production secrets remain outside the Git checkout:
 
-```text
-/home/ACCOUNT/domains/net.kokaacademyltd.com/
+~~~text
+/home/u323204665/domains/net.kokaacademyltd.com/
 ├── private-config/
-│   └── .env                 # production secrets; outside Git and public_html
-└── public_html/             # Hostinger Git deployment root
-    ├── .htaccess            # routes requests into public/ and blocks private paths
+│   └── .env                 # private production environment; never commit
+└── public_html/             # Hostinger Git target; branch main
+    ├── .htaccess            # blocks private project paths and routes to public/
     ├── app/
     ├── bootstrap/
+    │   ├── cache/
+    │   └── hostinger-cron.sh
     ├── config/
     ├── database/
     ├── public/
-    │   ├── .htaccess
-    │   ├── index.php
-    │   └── assets...
+    │   └── index.php
     ├── resources/
     ├── routes/
     ├── storage/
-    ├── vendor/              # installed with Composer on Hostinger
+    ├── vendor/              # installed with Composer on the host
     ├── artisan
     ├── composer.json
     └── composer.lock
-```
+~~~
 
-The production environment file is deliberately outside the Git checkout and outside the web root. `bootstrap/app.php` detects `../private-config/.env` relative to the application root and loads it automatically. Local development and CI continue using the normal project-root `.env`.
+The path above matches the account path seen in the supplied Hostinger error log. The application bootstrap loads ../private-config/.env automatically. The GitHub migration workflow checks for this exact sibling environment file.
 
-## Before deploying
+**Security note:** on shared hosting this is a compatibility arrangement, not as strong as placing the complete Laravel project outside the document root. The root .htaccess deny rules are mandatory. Never remove them, never put the real .env in public_html, and never use permissions such as 777. A future VPS deployment should move the project outside the web root and expose only Laravel's public/ directory.
 
-1. Keep Hostinger Auto-deployment **OFF** until the first deployment and verification are complete.
-2. Back up the current `public_html` before deploying. Hostinger warns that deployments overwrite files in the selected target directory. Keep a copy outside `public_html` if possible.
-3. Confirm the connected repository is `Martvic449/VTU-for-saas`, branch `main`, and root directory exactly `public_html`. Do not use the Node.js deployment flow.
-4. The deployment replaces repository-tracked files with the `main` branch contents. Do not keep production secrets, uploaded user files, or manually maintained content inside `public_html`.
+## 2. Current deployment facts
 
-Hostinger's Git guide documents PHP/HTML Git deployment, the `public_html` default, custom root selection, manual redeploy, and overwrite behavior:
-https://www.hostinger.com/support/1583302-how-to-deploy-a-git-repository-in-hostinger/
+- Repository: Martvic449/VTU-for-saas
+- Branch: main
+- Hostinger Git target: public_html
+- Public URL: https://net.kokaacademyltd.com
+- Private environment: domains/net.kokaacademyltd.com/private-config/.env
+- Database: the existing Hostinger MySQL database configured in that private file.
+- The repository contains composer.lock; do not run composer update on production.
+- bootstrap/cache/.gitignore and the required storage/**/.gitignore placeholders are committed so Git deployment creates Laravel's runtime directories.
+- Keep Hostinger Auto-deployment OFF until the first migration, seeding, admin bootstrap and smoke/security checks have succeeded. Turn it on afterward so future main releases deploy automatically.
 
-## Create the private production environment file
+Do not use Hostinger's Node.js Web App import flow. This is Laravel/PHP and does not need a fake package.json.
 
-Use Hostinger File Manager. Navigate to the directory containing `public_html`:
+## 3. Production environment
 
-1. Create a sibling folder named `private-config` (not inside `public_html`).
-2. Inside it, create a file named exactly `.env`.
-3. Copy the required variable names from `public_html/.env.example` and enter the real production values in `private-config/.env`.
-4. Restrict folder/file permissions to the hosting account owner where the File Manager permits it (typically folder `700`, file `600`). Do not use `777`.
+Keep the actual file private. Do not paste it into chat or screenshots. Use Hostinger's exact database values; the existing database host was set to localhost and should not be changed without evidence.
 
-Never commit, upload into `public_html`, paste into chat, or share the real `.env`. Do not send database passwords or provider keys in screenshots.
+Required production settings:
 
-Set at minimum:
+~~~dotenv
+APP_NAME="VTU SaaS"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://net.kokaacademyltd.com
+APP_TIMEZONE=Africa/Lagos
+APP_KEY=<existing generated key; preserve it>
 
-- `APP_NAME` to the chosen configurable product name
-- `APP_ENV=production`
-- `APP_DEBUG=false`
-- `APP_URL=https://net.kokaacademyltd.com`
-- `APP_KEY` (generate once after dependencies are installed; preserve it thereafter)
-- Hostinger's exact MySQL host, database name, username, and password
-- Production-safe cache, session, queue, and mail settings
-- Sandbox supplier/payment credentials only
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=<Hostinger database name>
+DB_USERNAME=<Hostinger database user>
+DB_PASSWORD=<private database password>
 
-Use the exact database host/name/user shown by Hostinger. Do not use MySQL root. Keep all secrets in the private file.
+CACHE_STORE=file
+SESSION_DRIVER=file
+SESSION_SECURE_COOKIE=true
+QUEUE_CONNECTION=database
+DB_QUEUE_RETRY_AFTER=150
 
-## Install Composer dependencies and prepare Laravel
+TENANT_BASE_DOMAIN=net.kokaacademyltd.com
+TENANT_DOMAIN_ENFORCE=true
+TENANT_PLATFORM_HOSTS=net.kokaacademyltd.com
 
-Hostinger Git deployment transfers the repository; it does not install Composer dependencies or run Laravel migrations.
+VTU_PROVIDER_ENVIRONMENT=sandbox
+PAYMENT_GATEWAYS_ENABLED=
+~~~
 
-Connect with Hostinger SSH and run from the deployed project directory:
+- Preserve the existing APP_KEY; changing it can invalidate encrypted provider credentials and sessions.
+- Keep APP_DEBUG=false.
+- Enforce known domains in production and list the platform hostname explicitly.
+- Leave payment gateways disabled until their sandbox acceptance is complete.
+- Configure a real SMTP mailer before relying on email verification or password reset. The example MAIL_MAILER=log is not a production mail service.
+- Do not add live supplier or payment credentials yet.
 
-```bash
-cd ~/domains/net.kokaacademyltd.com/public_html
+## 4. Composer and runtime directories
 
-mkdir -p bootstrap/cache \
-  storage/app/private storage/app/public \
-  storage/framework/cache/data \
-  storage/framework/sessions \
-  storage/framework/testing \
-  storage/framework/views \
-  storage/logs
+Hostinger Git transfers source files; it does not install Composer dependencies or run migrations. The repository now tracks the required runtime directory placeholders. The migration workflow refuses to continue unless vendor/autoload.php, the private environment file and writable bootstrap/cache are present.
 
-chmod -R u+rwX bootstrap/cache storage
+If vendor/autoload.php is missing, install from the committed lock file in the project root:
 
+~~~bash
 composer2 install --no-dev --prefer-dist --optimize-autoloader
-```
+~~~
 
-If the `composer2` command is not found, check Hostinger's SSH/Composer documentation or the Composer binary shown in hPanel. Do not run `composer update`; the committed `composer.lock` fixes the dependency versions.
+Do not run composer update. Do not delete the cache directories. Do not use 777.
 
-If Composer specifically reports that `proc_open` is disabled while executing scripts, use:
+## 5. Database migration and safe initial seeding
 
-```bash
-composer2 install --no-dev --prefer-dist --optimize-autoloader --no-scripts
-php artisan package:discover --ansi
-```
+The GitHub Actions workflow named **Hostinger production migrations** is guarded:
 
-Do not broadly remove PHP disabled-function restrictions.
+1. It runs only after Laravel CI succeeds on main, or when manually dispatched.
+2. It validates all six SSH/deployment secrets before connecting.
+3. It waits until Hostinger's Git checkout is the exact commit that passed CI.
+4. It verifies artisan, vendor/autoload.php, ../private-config/.env, and writable bootstrap/cache.
+5. It runs php artisan migrate --force.
+6. It runs php artisan db:seed --class=DatabaseSeeder --force.
 
-Generate the application key once, after `private-config/.env` exists:
+The reviewed database seeder is idempotent and creates only platform roles/permissions, the chart of accounts, and **inactive** catalogue templates. It does not create demo users, demo balances, transactions, or active provider mappings. The workflow never runs migrate:fresh, db:wipe, or destructive seeders.
 
-```bash
-php artisan key:generate
-```
+The earlier migration workflow run failed at the initial secrets check. It did not connect to Hostinger and did not run migrations. The reported missing tenant_domains table is resolved by applying the committed migrations to the configured database.
 
-Preserve this key for every future deployment. Never regenerate it routinely.
+### Required GitHub repository secrets
 
-Before running migrations, confirm the selected database is the intended database and take a backup. Then:
-
-```bash
-php artisan migrate --force
-php artisan storage:link
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-Do not run seeders until their contents and the production administrator bootstrap process have been reviewed. Do not seed demo data.
-
-## Verify web-root protection before enabling customers
-
-After deployment, open these paths in a private/incognito browser. They must return 403 or 404, never source contents:
-
-- `https://net.kokaacademyltd.com/.env`
-- `https://net.kokaacademyltd.com/.env.example`
-- `https://net.kokaacademyltd.com/composer.json`
-- `https://net.kokaacademyltd.com/composer.lock`
-- `https://net.kokaacademyltd.com/artisan`
-- `https://net.kokaacademyltd.com/vendor/`
-- `https://net.kokaacademyltd.com/app/`
-- `https://net.kokaacademyltd.com/storage/logs/`
-- `https://net.kokaacademyltd.com/.git/`
-
-The normal domain root must load Laravel, and Laravel's public assets must load without exposing the `public/` folder as the site URL.
-
-If the site returns 403/500 after deployment, do not disable the protection rules or enable `APP_DEBUG` publicly. Check Hostinger's PHP error log and verify both root `.htaccess` and `public/.htaccess` exist.
-
-## Operational restrictions
-
-- Do not enable live VTU purchases or live deposits until the database, queue worker, scheduler, supplier/payment sandbox tests, reconciliation, security, legal/compliance, and financial acceptance checks are complete.
-- A cron scheduler is not a durable queue worker. Verify Hostinger's supported process/queue options before processing financial transactions.
-- Keep user uploads and other runtime data in persistent storage locations that are backed up and are not overwritten by Git deployments.
-- Keep Auto-deployment OFF until the first manual deployment and smoke/security checks succeed. Re-enable it only after confirming deployments do not erase runtime data or the private environment file.
-
-
-## Automatic production migrations (GitHub Actions)
-
-The repository includes a guarded GitHub Actions workflow that runs **only after the Laravel CI workflow succeeds on `main`**. It connects to Hostinger over SSH, waits until Hostinger's asynchronous Git deployment has checked out the exact tested commit, verifies the Laravel app, Composer autoloader, private environment file, and writable cache directory, then runs:
-
-```bash
-php artisan migrate --force
-```
-
-It never runs `migrate:fresh`, `db:wipe`, or seeders. Laravel records applied migrations and runs only pending migrations. A failed check or failed migration stops the workflow and is visible in the GitHub Actions run.
-
-### One-time GitHub repository secrets
-
-In GitHub, open **Settings → Secrets and variables → Actions → New repository secret** and add these six secrets:
+Add these under GitHub → repository **Settings → Secrets and variables → Actions**:
 
 | Secret | Value |
 |---|---|
-| `HOSTINGER_SSH_HOST` | Hostinger SSH hostname shown in hPanel |
-| `HOSTINGER_SSH_USER` | Hostinger SSH username |
-| `HOSTINGER_SSH_PORT` | SSH port shown in hPanel |
-| `HOSTINGER_SSH_PRIVATE_KEY` | Private key for a dedicated deployment key; add its matching public key to Hostinger's SSH authorized keys |
-| `HOSTINGER_SSH_KNOWN_HOSTS` | Verified SSH host-key line for the Hostinger SSH host and port |
-| `HOSTINGER_DEPLOY_PATH` | Absolute application path, e.g. `/home/ACCOUNT/domains/net.kokaacademyltd.com/public_html` |
+| HOSTINGER_SSH_HOST | SSH hostname/IP shown in Hostinger hPanel |
+| HOSTINGER_SSH_USER | Hostinger SSH username |
+| HOSTINGER_SSH_PORT | SSH port shown in hPanel |
+| HOSTINGER_SSH_PRIVATE_KEY | Dedicated private deployment key; its matching public key goes into Hostinger SSH authorized keys |
+| HOSTINGER_SSH_KNOWN_HOSTS | Hostinger SSH host-key line after fingerprint verification |
+| HOSTINGER_DEPLOY_PATH | /home/u323204665/domains/net.kokaacademyltd.com/public_html |
 
-Do not put any of these values in the repository or in chat. Do not use the database password as an SSH password. Generate a dedicated SSH key pair for GitHub Actions, install only its public key in Hostinger, and keep its private key exclusively in the GitHub secret. Obtain the SSH host key from Hostinger's official support/hPanel guidance and verify its fingerprint before saving it as `HOSTINGER_SSH_KNOWN_HOSTS`.
+Never store the database password or the production .env in GitHub Actions secrets for this workflow. Do not paste SSH private keys into chat. Do not use the database password as an SSH password.
 
-After adding all six secrets, the next successful push to `main` will trigger the workflow automatically. You can also start it from **Actions → Hostinger production migrations → Run workflow** after the secrets are configured. A manual run uses the current `main` commit and still performs the same deployment-commit check.
+After the secrets exist, manually redeploy the current main commit from Hostinger if necessary, then run **Actions → Hostinger production migrations → Run workflow**. It will refuse to migrate if Hostinger is on an older commit. After migration and initial smoke/security checks succeed, enable Hostinger Auto-deployment for main; subsequent successful CI runs will then trigger the guarded migration workflow automatically.
 
-If a run fails because the deployed commit was not detected, confirm Hostinger's Git deployment is connected to this repository's `main` branch and that the deploy path points to the repository root (the `public_html` directory). The workflow intentionally refuses to migrate an older or unknown checkout.
+## 6. Create the first platform administrator
+
+After migration and seeding succeed, create the first platform administrator once from Hostinger's trusted SSH/Terminal:
+
+~~~bash
+cd /home/u323204665/domains/net.kokaacademyltd.com/public_html
+php artisan platform:make-admin ADMIN_EMAIL "Platform Administrator"
+~~~
+
+The command securely prompts for a temporary password and requires at least 12 characters. Use a unique password. Privileged accounts must enroll in MFA at first sign-in. Never create the administrator by inserting a raw database row.
+
+## 7. Scheduler and queue worker — one Hostinger cron job
+
+The application uses a database queue. A successful HTTP response only means a VTU request was accepted; the supplier job must be processed by a queue worker. The scheduler also dispatches reserved transactions, re-queries pending supplier/payment outcomes, and recovers webhook deliveries.
+
+This repository now includes bootstrap/hostinger-cron.sh. It:
+
+- checks that CLI PHP is 8.2 or newer;
+- checks Laravel dependencies and writable storage;
+- runs php artisan schedule:run;
+- starts a bounded database queue worker using --stop-when-empty;
+- uses flock to prevent overlapping queue workers;
+- exits after a bounded run rather than leaving an unmanaged daemon running.
+
+Create one Hostinger **Custom** cron job with this command, scheduled every minute:
+
+~~~bash
+bash /home/u323204665/domains/net.kokaacademyltd.com/public_html/bootstrap/hostinger-cron.sh
+~~~
+
+Check the cron output after its first run. If it reports that flock is unavailable, do not process VTU transactions on this shared host until a supported worker mechanism or VPS is arranged. A cron entry is not proof that the worker is healthy; verify that a test job is actually consumed before enabling purchases.
+
+## 8. Release and safety gates
+
+Do not enable live purchases, deposits or public reseller onboarding until all of the following are independently verified:
+
+- database migrations and safe seeders complete on the intended Hostinger database;
+- first platform admin is created and MFA works;
+- PHP CLI and web PHP both meet Laravel's PHP 8.2+ requirement and required extensions are enabled;
+- scheduler and queue worker process jobs reliably, and failed jobs/queue backlog can be inspected;
+- SMTP email verification and password reset work;
+- Hostinger backups are enabled and a restore has been tested;
+- .env, Composer files, artisan, vendor/, app/, storage/, and .git/ cannot be fetched over HTTP;
+- VTpass/SMEPlug and Paystack/OPay/Monnify sandbox transactions, callbacks, requery, duplicates, timeouts and reconciliation pass real partner sandbox tests;
+- Nigerian legal/compliance review, supplier/payment contracts, privacy terms and finance/accounting review are complete;
+- independent security review and load/soak tests are complete.
+
+The current automated CI run on 17 November 2026 passed 28 tests (88 assertions) against a MySQL 8 service and Composer reported no known security advisories. That is useful evidence, but it is not a substitute for production-host, concurrency, provider sandbox, settlement, legal, backup/restore or penetration testing.
+
+## 9. Official Hostinger references
+
+- Git deployment and root directory selection: https://www.hostinger.com/support/1583302-how-to-deploy-a-git-repository-in-hostinger/
+- SSH access: https://www.hostinger.com/support/1583645-how-to-enable-ssh-access-in-hostinger/
+- Cron jobs: https://www.hostinger.com/support/1583465-how-to-set-up-a-cron-job-at-hostinger/
+- Background-process capabilities on Web/Cloud hosting: https://www.hostinger.com/support/which-server-capabilities-are-supported-at-hostinger/
+- PHP version and extensions: https://www.hostinger.com/support/1583467-how-to-check-the-php-information-of-your-website-at-hostinger/
