@@ -97,17 +97,27 @@ jobs:
           composer install --no-interaction --prefer-dist --no-progress
           composer audit --locked
 
-      - name: Verify Hostinger public_html hardening
+      - name: Verify Hostinger public_html hardening and bounded worker
         shell: bash
         run: |
           set -euo pipefail
           test -s .htaccess
           test -s public/.htaccess
           test -s public/index.php
+          test -s bootstrap/hostinger-cron.sh
+          test -f storage/app/private/.gitignore
+          test -f storage/app/public/.gitignore
+          test -f storage/framework/cache/data/.gitignore
+          test -f storage/framework/sessions/.gitignore
+          test -f storage/framework/testing/.gitignore
+          test -f storage/framework/views/.gitignore
+          test -f storage/logs/.gitignore
           grep -Fq 'RewriteRule ^(.*)$ public/$1 [L]' .htaccess
+          grep -Fq 'bootstrap' .htaccess
           grep -Fq 'vendor' .htaccess
           grep -Fq 'composer' .htaccess
           grep -Fq 'private-config' docs/HOSTINGER_PRIVATE_DEPLOYMENT.md
+          bash -n bootstrap/hostinger-cron.sh
 
       - name: Run Laravel tests
         run: php artisan test

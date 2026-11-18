@@ -18,37 +18,62 @@ final class AuthenticateDeveloperApiKey
         $key = app(ApiKeyService::class)->verify($presented);
         abort_unless($key, 401, 'Invalid API key.');
         abort_unless($scope === null || in_array($scope, $key->scopes, true), 403, 'API key lacks the required scope.');
-        $client = \Illuminate\Support\Facades\DB::table('api_clients')->where('id', $key->api_client_id)->where('status', 'active')->first();
+
+        $client = DB::table('api_clients')->where('id', $key->api_client_id)->where('status', 'active')->first();
         abort_unless($client, 401, 'API client is inactive.');
+
         $clientScopes = json_decode($client->scopes ?: '[]', true) ?: [];
         abort_unless($scope === null || in_array($scope, $clientScopes, true), 403, 'API client lacks the required scope.');
+
         $owner = DB::table('users')->where('id', $client->user_id)->where('status', 'active')->exists();
         abort_unless($owner, 401, 'API client owner account is inactive.');
+
         if ($client->tenant_id) {
             $tenantActive = DB::table('tenants')->where('id', $client->tenant_id)->where('status', 'active')->exists();
             abort_unless($tenantActive, 403, 'Tenant is suspended or inactive.');
+
+            // API credentials belong to the user who created the client. Revoking
+            // that user's tenant membership must revoke the credential's effective
+            // access immediately, without relying on a manual key rotation.
+            $activeMembership = DB::table('tenant_user')
+                ->where('tenant_id', $client->tenant_id)
+                ->where('user_id', $client->user_id)
+                ->where('status', 'active')
+                ->exists();
+            abort_unless($activeMembership, 403, 'API client owner is no longer an active tenant member.');
         }
+
         if ($client->ip_allowlist) {
             $allowlist = json_decode($client->ip_allowlist, true) ?: [];
             abort_unless(in_array($request->ip(), $allowlist, true), 403, 'Source IP is not allowed.');
         }
+
         $rateKey = 'developer-api-key:'.$key->id;
         if (RateLimiter::tooManyAttempts($rateKey, 60)) {
             return response()->json(['error' => ['code' => 'rate_limit_exceeded', 'message' => 'API key request limit exceeded.']], 429)
                 ->header('Retry-After', (string) RateLimiter::availableIn($rateKey));
         }
         RateLimiter::hit($rateKey, 60);
+
         $request->attributes->set('api_client', $client);
         $request->attributes->set('api_key', $key);
         $requestId = (string) Str::uuid();
         $started = microtime(true);
         $response = $next($request);
+
         DB::table('api_requests')->insert([
-            'api_client_id' => $client->id, 'api_key_id' => $key->id, 'request_id' => $requestId,
-            'method' => $request->method(), 'path' => '/'.$request->path(), 'status_code' => $response->getStatusCode(),
-            'duration_ms' => (int) ((microtime(true) - $started) * 1000), 'ip_address' => $request->ip(), 'created_at' => now(),
+            'api_client_id' => $client->id,
+            'api_key_id' => $key->id,
+            'request_id' => $requestId,
+            'method' => $request->method(),
+            'path' => '/'.$request->path(),
+            'status_code' => $response->getStatusCode(),
+            'duration_ms' => (int) ((microtime(true) - $started) * 1000),
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
         ]);
         $response->headers->set('X-Request-ID', $requestId);
+
         return $response;
     }
 }

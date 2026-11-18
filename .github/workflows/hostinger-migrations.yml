@@ -93,6 +93,16 @@ jobs:
             exit 1
           fi
 
+          php -r 'exit(version_compare(PHP_VERSION, "8.2.0", ">=") ? 0 : 1);' || {
+            echo "Hostinger CLI PHP must be 8.2 or newer."
+            exit 1
+          }
+
+          php -r '$required = ["pdo_mysql", "mbstring", "openssl", "curl", "fileinfo", "tokenizer", "xml"]; foreach ($required as $extension) { if (! extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: ".$extension.PHP_EOL); exit(1); } }' || {
+            echo "Hostinger CLI is missing a required Laravel/PDO extension."
+            exit 1
+          }
+
           if [ ! -f ../private-config/.env ]; then
             echo "The private production environment file ../private-config/.env is missing; refusing to migrate."
             exit 1
@@ -103,7 +113,26 @@ jobs:
             exit 1
           }
 
+          for runtime_dir in \
+            storage/app/private \
+            storage/app/public \
+            storage/framework/cache/data \
+            storage/framework/sessions \
+            storage/framework/testing \
+            storage/framework/views \
+            storage/logs; do
+            test -d "$runtime_dir" && test -w "$runtime_dir" || {
+              echo "$runtime_dir is missing or not writable."
+              exit 1
+            }
+          done
+
           # This is deliberately migrate (not migrate:fresh or db:wipe).
           # Laravel applies only migrations not yet recorded in the migrations table.
           php artisan migrate --force
+
+          # These reviewed seeders create platform roles/permissions, the chart
+          # of accounts, and inactive service templates only. No demo accounts,
+          # balances, transactions, or live service mappings are seeded.
+          php artisan db:seed --class=DatabaseSeeder --force
           REMOTE

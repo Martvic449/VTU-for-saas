@@ -37,15 +37,11 @@ The admin command prompts for an initial password. Never place production creden
 
 ## Queue and scheduler
 
-Provider submissions and webhook deliveries are asynchronous. Configure a durable queue connection and run a worker:
+Provider submissions and webhook deliveries are asynchronous. Production must use a durable queue connection and a running worker; a queued transaction is not fulfilled until the worker processes it.
 
-```bash
-php artisan queue:work --tries=1 --timeout=120
-php artisan schedule:work
-```
+For Hostinger Business, use the bounded, overlap-protected runner at bootstrap/hostinger-cron.sh from one Custom cron job every minute. It runs Laravel's scheduler and a database queue worker with stop-when-empty. The full setup and validation procedure is in docs/HOSTINGER_PRIVATE_DEPLOYMENT.md. Do not use the synchronous queue in production, and do not enable VTU purchases until the cron output confirms jobs are actually processed.
 
-The scheduler queues safe status requery for pending supplier references every five minutes, flags stale submissions without a supplier reference for manual reconciliation, and re-dispatches due/stale webhook deliveries every minute. Do not use the synchronous queue in production. Configure the host cron to invoke `php artisan schedule:run` every minute if `schedule:work` is not a persistent process.
-
+For local development, run php artisan queue:work and php artisan schedule:work in separate terminals.
 ## Provider configuration
 
 The platform admin Integrations screen creates a provider using the `configured_http` adapter. Configure only from official supplier documentation:

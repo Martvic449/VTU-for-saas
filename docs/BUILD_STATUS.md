@@ -1,4 +1,6 @@
-# Build status — 16 November 2026
+# Historical build status snapshot — 16 November 2026
+
+> This is a historical record, not the current deployment checklist. Since this snapshot, composer.lock has been committed, Laravel CI has run against MySQL 8, and Hostinger migration automation has been added. For current implementation findings and remaining release blockers, see [ENGINEERING_AUDIT_2026-11-18.md](ENGINEERING_AUDIT_2026-11-18.md), [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md), and [HOSTINGER_PRIVATE_DEPLOYMENT.md](HOSTINGER_PRIVATE_DEPLOYMENT.md).
 
 ## Additional implementation delivered in this update
 

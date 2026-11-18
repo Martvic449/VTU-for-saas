@@ -43,7 +43,7 @@ final class DeliverWebhook implements ShouldQueue
         }
         $secret = (string) $endpoint->secret_encrypted;
         try {
-            $urlPolicy->assertPublicHttps($endpoint->url);
+            $urlOptions = $urlPolicy->assertPublicHttps($endpoint->url);
         } catch (Throwable $exception) {
             $delivery->update(['status' => 'abandoned', 'updated_at' => now()]);
             report($exception);
@@ -54,7 +54,7 @@ final class DeliverWebhook implements ShouldQueue
         $timestamp = (string) now()->timestamp;
         $signature = $signer->sign($secret, (int) $timestamp, $body);
         try {
-            $response = Http::withoutRedirecting()->connectTimeout(4)->timeout(10)->withHeaders([
+            $response = Http::withOptions($urlOptions)->withoutRedirecting()->connectTimeout(4)->timeout(10)->withHeaders([
                 'Content-Type' => 'application/json', 'X-VTU-Event' => $delivery->event_type,
                 'X-VTU-Delivery' => $delivery->event_id, 'X-VTU-Timestamp' => $timestamp, 'X-VTU-Signature' => $signature,
             ])->withBody($body, 'application/json')->post($endpoint->url);

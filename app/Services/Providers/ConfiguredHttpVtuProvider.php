@@ -19,13 +19,14 @@ class ConfiguredHttpVtuProvider implements VtuProvider
     {
         $settings = $this->settings();
         $url = $settings['purchase_url'] ?? null;
-        if (! is_string($url) || ! $this->isAllowedUrl($url)) throw new RuntimeException('Provider purchase URL is missing or is not HTTPS.');
+        if (! is_string($url)) throw new RuntimeException('Provider purchase URL is missing or is not HTTPS.');
+        $urlOptions = $this->urlOptions($url);
         $context = ['service_code' => $serviceCode, 'product_code' => $payload['product_code'] ?? $serviceCode,
             'customer' => array_diff_key($payload, ['product_code' => true, '_provider_mapping' => true]), 'reference' => $idempotencyReference];
         $body = $this->mappedBody((array) ($settings['purchase_fields'] ?? []), $context)
             ?: ['service_code' => $serviceCode, 'product_code' => $context['product_code'], 'customer' => $context['customer'], 'reference' => $idempotencyReference];
         try {
-            $request = Http::withHeaders($this->headers($idempotencyReference))->acceptJson()->asJson()
+            $request = Http::withOptions($urlOptions)->withoutRedirecting()->withHeaders($this->headers($idempotencyReference))->acceptJson()->asJson()
                 ->connectTimeout((int) ($settings['connect_timeout_seconds'] ?? 5))->timeout((int) ($settings['timeout_seconds'] ?? 20));
             $response = strtoupper((string) ($settings['purchase_method'] ?? 'POST')) === 'GET'
                 ? $request->get($url, $body) : $request->post($url, $body);
@@ -39,12 +40,13 @@ class ConfiguredHttpVtuProvider implements VtuProvider
     {
         $settings = $this->settings();
         $url = $settings['requery_url'] ?? null;
-        if (! is_string($url) || ! $this->isAllowedUrl($url)) throw new RuntimeException('Provider requery URL is missing or is not HTTPS.');
+        if (! is_string($url)) throw new RuntimeException('Provider requery URL is missing or is not HTTPS.');
+        $urlOptions = $this->urlOptions($url);
         $context = ['provider_reference' => $providerReference, 'reference' => $idempotencyReference];
         $body = $this->mappedBody((array) ($settings['requery_fields'] ?? []), $context)
             ?: [(string) ($settings['requery_reference_parameter'] ?? 'reference') => $providerReference, 'client_reference' => $idempotencyReference];
         try {
-            $request = Http::withHeaders($this->headers($idempotencyReference))->acceptJson()->asJson()
+            $request = Http::withOptions($urlOptions)->withHeaders($this->headers($idempotencyReference))->acceptJson()->asJson()
                 ->connectTimeout((int) ($settings['connect_timeout_seconds'] ?? 5))->timeout((int) ($settings['timeout_seconds'] ?? 20));
             $response = strtoupper((string) ($settings['requery_method'] ?? 'GET')) === 'POST'
                 ? $request->post($url, $body) : $request->get($url, $body);
@@ -103,9 +105,12 @@ class ConfiguredHttpVtuProvider implements VtuProvider
         return $headers;
     }
 
-    private function isAllowedUrl(string $url): bool
+    private function urlOptions(string $url): array
     {
-        try { app(WebhookUrlPolicy::class)->assertPublicHttps($url); return true; }
-        catch (InvalidArgumentException $exception) { return false; }
+        try {
+            return app(WebhookUrlPolicy::class)->assertPublicHttps($url);
+        } catch (InvalidArgumentException $exception) {
+            throw new RuntimeException('Provider URL must resolve to a public HTTPS destination.', 0, $exception);
+        }
     }
 }
