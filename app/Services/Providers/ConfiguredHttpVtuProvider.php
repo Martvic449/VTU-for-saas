@@ -46,7 +46,7 @@ class ConfiguredHttpVtuProvider implements VtuProvider
         $body = $this->mappedBody((array) ($settings['requery_fields'] ?? []), $context)
             ?: [(string) ($settings['requery_reference_parameter'] ?? 'reference') => $providerReference, 'client_reference' => $idempotencyReference];
         try {
-            $request = Http::withHeaders($this->headers($idempotencyReference))->acceptJson()->asJson()
+            $request = Http::withOptions($urlOptions)->withHeaders($this->headers($idempotencyReference))->acceptJson()->asJson()
                 ->connectTimeout((int) ($settings['connect_timeout_seconds'] ?? 5))->timeout((int) ($settings['timeout_seconds'] ?? 20));
             $response = strtoupper((string) ($settings['requery_method'] ?? 'GET')) === 'POST'
                 ? $request->post($url, $body) : $request->get($url, $body);
