@@ -26,7 +26,8 @@ These are implemented code paths, not proof that all product requirements have p
 3. A tenant developer API key remained usable after the user who owned its API client lost active membership in that tenant. This is an authorization gap.
 4. Hostinger documents contradicted one another: some described a private project directory while the deployed workflow and actual site used public_html. One guide also instructed keeping Auto-deployment off while describing an automatic deployment-commit wait. That is not a coherent release procedure.
 5. The migration workflow created schema but did not run the reviewed foundational seeders. The first platform administrator requires the super-admin role, and financial operations require the chart of accounts.
-6. Unknown-host enforcement defaulted to false even in production unless explicitly configured.\n7. Webhook and configurable-provider URL validation checked DNS addresses, but the subsequent HTTP client performed a fresh DNS lookup. That left a DNS-rebinding window to private network destinations.
+6. Unknown-host enforcement defaulted to false even in production unless explicitly configured.
+7. Webhook and configurable-provider URL validation checked DNS addresses, but the subsequent HTTP client performed a fresh DNS lookup. That left a DNS-rebinding window to private network destinations.
 
 ## Remediation included in this audit branch
 
@@ -34,7 +35,8 @@ These are implemented code paths, not proof that all product requirements have p
 - Added bootstrap/hostinger-cron.sh, a bounded Hostinger runner for schedule:run and database queue:work. It checks PHP/runtime prerequisites and uses flock to prevent overlapping workers.
 - Updated CI to syntax-check the runner and verify the relevant deployment protections.
 - Updated tenant API-key middleware to reject tenant-owned API clients whose owner is no longer an active member; added a regression test.
-- Changed the tenant-domain enforcement default to fail closed when APP_ENV=production and enabled it in .env.example, while retaining the explicit environment override.\n- Pin webhook and configurable-provider HTTP connections to the public DNS address validated by the URL policy, closing the validation/connect DNS-rebinding gap; added focused regression tests.
+- Changed the tenant-domain enforcement default to fail closed when APP_ENV=production and enabled it in .env.example, while retaining the explicit environment override.
+- Pin webhook and configurable-provider HTTP connections to the public DNS address validated by the URL policy, closing the validation/connect DNS-rebinding gap; added focused regression tests.
 - Updated the Hostinger migration workflow to run the reviewed, idempotent DatabaseSeeder after successful migrations. It creates roles/permissions, the chart of accounts and inactive service templates only; it does not create demo balances, transactions or users.
 - Consolidated the Hostinger instructions into one authoritative runbook and marked older contradictory guides as superseded.
 
