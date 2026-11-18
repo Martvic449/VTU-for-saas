@@ -106,4 +106,9 @@ jobs:
           # This is deliberately migrate (not migrate:fresh or db:wipe).
           # Laravel applies only migrations not yet recorded in the migrations table.
           php artisan migrate --force
+
+          # These reviewed seeders create platform roles/permissions, the chart
+          # of accounts, and inactive service templates only. No demo accounts,
+          # balances, transactions, or live service mappings are seeded.
+          php artisan db:seed --class=DatabaseSeeder --force
           REMOTE
