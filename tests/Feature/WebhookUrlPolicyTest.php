@@ -14,7 +14,8 @@ it('pins validated webhook hostnames to a public address instead of resolving ag
 
     $options = $policy->pinnedResolveOptions('hooks.example.com', 443, ['1.1.1.1']);
 
-    expect($options)->toHaveKey('curl.'.CURLOPT_RESOLVE)
+    expect($options)->toHaveKey('curl')
+        ->and($options['curl'])->toHaveKey(CURLOPT_RESOLVE)
         ->and($options['curl'][CURLOPT_RESOLVE])->toBe(['hooks.example.com:443:1.1.1.1']);
 });
 
