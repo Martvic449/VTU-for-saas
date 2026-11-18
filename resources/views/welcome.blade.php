@@ -1,40 +1,51 @@
 @extends('layouts.app')
-@section('title', 'A simpler way to buy and resell digital services')
+@section('title', 'Buy digital services or build your VTU business')
 @section('content')
 <div class="wrap">
-  <section class="hero" style="max-width:900px;padding-top:76px">
-    <span class="pill">VTU services · Reseller tools · Business API</span>
-    <h1>Digital services, made simple to buy and easier to sell.</h1>
-    <p>Buy airtime, data and other supported digital services for yourself, or build a reseller business with your own customer workspace. One platform, with clear tools for every kind of user.</p>
-    <div class="row" style="justify-content:flex-start;margin-top:26px">
-      <a class="btn" href="{{ route('account.type') }}">Create an account</a>
+  <section class="hero" style="max-width:980px;padding:76px 0 54px">
+    <span class="pill">Airtime · Data · Digital services · Reseller tools</span>
+    <h1>Everything digital. One simpler way to buy, sell and grow.</h1>
+    <p>Top up for yourself in a few steps, or build a digital services business with a dedicated reseller workspace. Choose the account that fits the way you want to use VTU SaaS.</p>
+    <div class="row" style="justify-content:flex-start;margin-top:28px">
+      <a class="btn" href="{{ route('account.type') }}">Choose your account <span aria-hidden="true">→</span></a>
       <a class="btn secondary" href="{{ route('login') }}">Sign in</a>
     </div>
-    <p style="font-size:12px;margin-top:18px">Available services, networks, prices and fulfilment depend on active supplier connections and account eligibility.</p>
+    <p style="font-size:12px;margin-top:18px">Services, networks, prices and fulfilment depend on active supplier connections, availability and account eligibility.</p>
   </section>
 
-  <section style="margin:8px 0 58px">
-    <div class="section-head"><h2 class="title">Choose how you want to use the platform</h2><p>Start with the account that matches what you want to do.</p></div>
-    <div class="grid">
-      <article class="card"><div class="pill">For personal use</div><h3>Customer account</h3><p class="muted">Buy airtime, data and other available digital services for yourself. Manage your profile, wallet activity and purchase history in one place.</p><a href="{{ route('register') }}" style="color:var(--green-dark);font-weight:700">Create customer account →</a></article>
-      <article class="card"><div class="pill">For entrepreneurs</div><h3>Reseller account</h3><p class="muted">Start a digital services business, serve your own customers and manage your storefront, business wallet and transactions from a dedicated workspace.</p><a href="{{ route('register.reseller') }}" style="color:var(--green-dark);font-weight:700">Create reseller account →</a></article>
-      <article class="card"><div class="pill">For developers & businesses</div><h3>API access</h3><p class="muted">Connect your application to supported services using scoped API credentials, transaction references and signed webhooks. API access is managed through an approved business workspace.</p><a href="{{ route('register.reseller') }}" style="color:var(--green-dark);font-weight:700">Start with business access →</a></article>
+  <section style="margin:0 0 62px">
+    <div class="section-head"><h2 class="title">What would you like to do?</h2><p>Start with the account made for your needs. You can use one sign-in page after registration.</p></div>
+    <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:20px">
+      <article class="card" style="padding:clamp(22px,3vw,34px)">
+        <span class="pill">Personal use</span>
+        <h3 style="font-size:23px;margin:16px 0 8px">I want to buy for myself</h3>
+        <p class="muted">Create a customer account to purchase airtime, data and other available digital services, then keep track of your wallet activity and purchase history.</p>
+        <ul class="muted" style="padding-left:19px;margin:18px 0"><li>Personal customer dashboard</li><li>Wallet and purchase history</li><li>Simple access to available services</li></ul>
+        <a class="btn" href="{{ route('register') }}">Create customer account</a>
+      </article>
+      <article class="card" style="padding:clamp(22px,3vw,34px);border-color:#b9e6d8">
+        <span class="pill" style="background:#e7f7f0;color:#087451">Business use</span>
+        <h3 style="font-size:23px;margin:16px 0 8px">I want to sell to customers</h3>
+        <p class="muted">Apply for a reseller workspace to run your own VTU business, manage customers and transactions, and build your digital services brand.</p>
+        <ul class="muted" style="padding-left:19px;margin:18px 0"><li>Dedicated business workspace</li><li>Customer and transaction management</li><li>Pathway to API and developer tools</li></ul>
+        <a class="btn" href="{{ route('register.reseller') }}">Apply for reseller account</a>
+      </article>
     </div>
   </section>
 
-  <section class="card" style="padding:clamp(22px,4vw,42px);margin-bottom:48px">
-    <h2 class="title">A clear workspace as you grow</h2>
-    <p class="muted" style="max-width:850px">Keep purchases, customer activity and business operations organised. Reseller workspaces are separated from one another, while platform services and integrations are enabled only after the required configuration and checks.</p>
-    <div class="grid" style="margin-bottom:0">
-      <div><strong>Customer tools</strong><p class="muted">Account, wallet activity and purchase history.</p></div>
-      <div><strong>Reseller tools</strong><p class="muted">Business workspace, customer management and service pricing.</p></div>
-      <div><strong>Developer tools</strong><p class="muted">API credentials, usage visibility and webhook management.</p></div>
+  <section class="card" style="padding:clamp(22px,4vw,42px);margin-bottom:54px">
+    <div class="section-head"><h2 class="title">Built to support the next step</h2><p>Keep everyday purchases and business operations organised as your needs grow.</p></div>
+    <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:0">
+      <div><strong>For customers</strong><p class="muted">A personal account for supported purchases, wallet activity and receipts.</p></div>
+      <div><strong>For resellers</strong><p class="muted">A separate business workspace for your customers, services and transactions.</p></div>
+      <div><strong>For developers</strong><p class="muted">API credentials and webhook tools are managed through an approved reseller workspace.</p></div>
     </div>
   </section>
 
-  <section style="max-width:760px;margin:0 auto 55px;text-align:center">
-    <h2 class="title">Already have an account?</h2><p class="muted">Use the same secure sign-in page for customer and reseller accounts. We’ll direct you to the workspace associated with your account.</p>
-    <a class="btn" href="{{ route('login') }}">Sign in to your account</a>
+  <section style="max-width:760px;margin:0 auto 58px;text-align:center">
+    <h2 class="title">Already registered?</h2>
+    <p class="muted">Customers and resellers use the same secure sign-in page. We’ll direct you to the workspace associated with your account.</p>
+    <a class="btn secondary" href="{{ route('login') }}">Sign in to your account</a>
   </section>
 </div>
 @endsection
