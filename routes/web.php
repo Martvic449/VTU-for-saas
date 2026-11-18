@@ -18,6 +18,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 
 Route::get('/', StorefrontController::class)->name('home');
+Route::view('/get-started', 'auth.choose-account')->name('account.type');
 Route::view('/privacy-policy', 'legal.privacy')->name('legal.privacy');
 Route::view('/terms-and-conditions', 'legal.terms')->name('legal.terms');
 Route::get('/customer/register', [TenantCustomerController::class, 'registerForm'])->name('tenant.customer.register');
