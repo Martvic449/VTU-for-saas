@@ -86,7 +86,7 @@ PAYMENT_GATEWAYS_ENABLED=
 
 - Preserve the existing APP_KEY; changing it can invalidate encrypted provider credentials and sessions.
 - Keep APP_DEBUG=false.
-- Enforce known domains in production and list the platform hostname explicitly.
+- Production now forces known-domain enforcement even if the old private .env still contains TENANT_DOMAIN_ENFORCE=false. Keep the platform hostname listed explicitly in TENANT_PLATFORM_HOSTS.
 - Leave payment gateways disabled until their sandbox acceptance is complete.
 - Configure a real SMTP mailer before relying on email verification or password reset. The example MAIL_MAILER=log is not a production mail service.
 - Do not add live supplier or payment credentials yet.
