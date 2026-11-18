@@ -111,8 +111,10 @@ The GitHub Actions workflow named **Hostinger production migrations** is guarded
 2. On automatic workflow_run events, it safely skips deployment if the six SSH/deployment secrets have not yet been configured. A manual Run workflow attempt fails clearly until all six secrets exist.
 3. It waits until Hostinger's Git checkout is the exact commit that passed CI.
 4. It verifies artisan, vendor/autoload.php, ../private-config/.env, and writable bootstrap/cache.
-5. It runs php artisan migrate --force.
-6. It runs php artisan db:seed --class=DatabaseSeeder --force.
+5. It clears stale Laravel optimization/config caches with php artisan optimize:clear.
+6. It runs php artisan migrate --force.
+7. It runs php artisan db:seed --class=DatabaseSeeder --force.
+8. It rebuilds the production configuration cache from the private environment file.
 
 The reviewed database seeder is idempotent and creates only platform roles/permissions, the chart of accounts, and **inactive** catalogue templates. It does not create demo users, demo balances, transactions, or active provider mappings. The workflow never runs migrate:fresh, db:wipe, or destructive seeders.
 
