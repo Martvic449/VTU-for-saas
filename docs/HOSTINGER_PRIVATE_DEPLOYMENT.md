@@ -86,7 +86,7 @@ PAYMENT_GATEWAYS_ENABLED=
 
 - Preserve the existing APP_KEY; changing it can invalidate encrypted provider credentials and sessions.
 - Keep APP_DEBUG=false.
-- Enforce known domains in production and list the platform hostname explicitly.
+- Production now forces known-domain enforcement even if the old private .env still contains TENANT_DOMAIN_ENFORCE=false. Keep the platform hostname listed explicitly in TENANT_PLATFORM_HOSTS.
 - Leave payment gateways disabled until their sandbox acceptance is complete.
 - Configure a real SMTP mailer before relying on email verification or password reset. The example MAIL_MAILER=log is not a production mail service.
 - Do not add live supplier or payment credentials yet.
@@ -111,8 +111,10 @@ The GitHub Actions workflow named **Hostinger production migrations** is guarded
 2. On automatic workflow_run events, it safely skips deployment if the six SSH/deployment secrets have not yet been configured. A manual Run workflow attempt fails clearly until all six secrets exist.
 3. It waits until Hostinger's Git checkout is the exact commit that passed CI.
 4. It verifies artisan, vendor/autoload.php, ../private-config/.env, and writable bootstrap/cache.
-5. It runs php artisan migrate --force.
-6. It runs php artisan db:seed --class=DatabaseSeeder --force.
+5. It clears stale Laravel optimization/config caches with php artisan optimize:clear.
+6. It runs php artisan migrate --force.
+7. It runs php artisan db:seed --class=DatabaseSeeder --force.
+8. It rebuilds the production configuration cache from the private environment file.
 
 The reviewed database seeder is idempotent and creates only platform roles/permissions, the chart of accounts, and **inactive** catalogue templates. It does not create demo users, demo balances, transactions, or active provider mappings. The workflow never runs migrate:fresh, db:wipe, or destructive seeders.
 

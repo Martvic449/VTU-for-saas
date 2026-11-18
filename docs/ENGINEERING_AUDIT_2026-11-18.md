@@ -37,7 +37,7 @@ The remediation set was merged as PR #8 at commit f5e712db78e42dd0465f1574747eeb
 - Added bootstrap/hostinger-cron.sh, a bounded Hostinger runner for schedule:run and database queue:work. It checks PHP/runtime prerequisites and uses flock to prevent overlapping workers.
 - Updated CI to syntax-check the runner and verify the relevant deployment protections.
 - Updated tenant API-key middleware to reject tenant-owned API clients whose owner is no longer an active member; added a regression test.
-- Changed the tenant-domain enforcement default to fail closed when APP_ENV=production and enabled it in .env.example, while retaining the explicit environment override.
+- Changed tenant-domain enforcement to be mandatory in production (an old TENANT_DOMAIN_ENFORCE=false value cannot disable it); enabled it in .env.example for local environments too.
 - Pin webhook and configurable-provider HTTP connections to the public DNS address validated by the URL policy, closing the validation/connect DNS-rebinding gap; added focused regression tests.
 - Updated the Hostinger migration workflow to run the reviewed, idempotent DatabaseSeeder after successful migrations. It creates roles/permissions, the chart of accounts and inactive service templates only; it does not create demo balances, transactions or users.
 - Consolidated the Hostinger instructions into one authoritative runbook and marked older contradictory guides as superseded.

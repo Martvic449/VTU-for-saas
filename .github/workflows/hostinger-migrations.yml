@@ -146,6 +146,9 @@ jobs:
             }
           done
 
+          # Remove stale framework/config caches before bootstrapping the release.
+          php artisan optimize:clear
+
           # This is deliberately migrate (not migrate:fresh or db:wipe).
           # Laravel applies only migrations not yet recorded in the migrations table.
           php artisan migrate --force
@@ -154,4 +157,7 @@ jobs:
           # of accounts, and inactive service templates only. No demo accounts,
           # balances, transactions, or live service mappings are seeded.
           php artisan db:seed --class=DatabaseSeeder --force
+
+          # Rebuild production configuration from the private environment file.
+          php artisan config:cache
           REMOTE
