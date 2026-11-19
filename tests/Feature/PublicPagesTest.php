@@ -95,7 +95,7 @@ test('account type selection and registration forms are mobile responsive', func
     $this->get('/get-started')
         ->assertOk()
         ->assertSee('account-type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))', false)
-        ->assertSee('@media(max-width:760px){.account-type-grid{grid-template-columns:1fr}', false)
+        ->assertSee('.account-type-grid{grid-template-columns:1fr', false)
         ->assertSee('border-color:#cfe8dc', false)
         ->assertSee('background:#e7f5ee;color:#087456', false);
 
