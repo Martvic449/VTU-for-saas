@@ -57,6 +57,16 @@
       @media(max-width:900px){.steps-layout{grid-template-columns:1fr;gap:24px}.steps-copy{max-width:100%}.steps-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.step-card{min-height:0}}
       @media(max-width:760px){.steps-layout{grid-template-columns:1fr;gap:22px}.steps-grid{grid-template-columns:1fr;gap:12px}.step-card{min-height:0;padding:20px}.audience-grid{grid-template-columns:1fr;gap:12px;margin-top:20px}.audience-card{padding:18px}.safety-band{padding:38px 20px}.safety-inner{align-items:flex-start;flex-direction:column;gap:16px}.safety-points{display:grid;grid-template-columns:1fr;gap:7px}.home-section{padding:48px 18px}}
       @media(max-width:620px){.steps-grid{grid-template-columns:1fr}.steps-copy .title{font-size:clamp(27px,7vw,34px)}.steps-copy .section-intro{font-size:15px}.step-card p,.audience-card p{font-size:14px}.safety-band{padding:32px 16px}}
+\n    
+      /* Account choice and registration pages: mobile-first sizing */
+      .account-type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;width:100%}
+      .account-type-grid>.card{display:flex;flex-direction:column;min-width:0}
+      .account-type-grid>.card .btn{margin-top:auto;white-space:normal;text-align:center}
+      .account-type-grid>.card p,.account-type-grid>.card li{font-size:14px;line-height:1.75}
+      .account-type-grid>.card h2{font-size:clamp(20px,2.4vw,23px)}
+      @media(max-width:760px){.account-type-grid{grid-template-columns:1fr;gap:14px}.account-type-grid>.card{padding:22px}.account-type-grid>.card ul{margin:14px 0 20px}.home-section:has(.account-type-grid){padding:42px 18px}.home-section:has(.account-type-grid) .section-inner{width:100%}.home-section:has(.account-type-grid) .section-inner>div:first-child{margin:0 auto 22px!important}.home-section:has(.account-type-grid) .title{font-size:clamp(27px,7vw,34px)!important;line-height:1.18}}
+      @media(max-width:420px){.home-section:has(.account-type-grid){padding:32px 14px}.account-type-grid>.card{padding:19px}.account-type-grid>.card .btn{width:100%;font-size:13px;padding:12px 10px}.account-type-grid>.card ul{padding-left:18px}}
+      @media(max-width:480px){.form{margin:24px auto;padding:20px 17px}.form .row[style*="nowrap"]{flex-wrap:wrap!important;align-items:flex-start}.form .row[style*="nowrap"]>span{font-size:12px;overflow-wrap:anywhere}.form .btn{width:100%;white-space:normal}}
 \n    </style>
     @stack('head')
 </head>
