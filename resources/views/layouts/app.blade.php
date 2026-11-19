@@ -51,7 +51,7 @@
       .section-intro{font-size:15px;line-height:1.75;font-weight:400}
       .home-section p,.safety-band p,.app-content p,.form p,.public-footer p{font-size:14px;line-height:1.75;font-weight:400}
       .feature-card p,.step-card p,.audience-card p,.service-tile p,.benefit-row p,.reseller-feature p,.trust-grid p,.faq-list details p{font-size:14px;line-height:1.7;font-weight:400}
-      .service-note{font-size:13px;line-height:1.65}
+      .service-note{font-size:13px;line-height:1.65}.footer-brand p{font-size:14px;line-height:1.7}
       .safety-band{background:#f0f5f2;border-top:1px solid #e5ece8;border-bottom:1px solid #e5ece8;padding:52px 24px}
       .safety-points{font-size:13px;line-height:1.6}
       @media(max-width:900px){.steps-layout{grid-template-columns:1fr;gap:24px}.steps-copy{max-width:100%}.steps-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.step-card{min-height:0}}
