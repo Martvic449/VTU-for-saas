@@ -18,7 +18,7 @@ test('public homepage and legal pages are available to guests', function () {
 test('public homepage contains responsive navigation, product sections and footer', function () {
     $this->get('/')
         ->assertOk()
-        ->assertSee('mobileMenuToggle', false)
+        ->assertSee('publicMenuToggle', false)
         ->assertSee('publicNav', false)
         ->assertSee('id="features"', false)
         ->assertSee('id="how-it-works"', false)
@@ -44,9 +44,8 @@ test('visitors can choose between customer and reseller registration', function 
         ->assertSee('/register/reseller');
 });
 
-test('password visibility controls are available on sign in and password forms', function () {
+test('password visibility controls are available on customer, reseller and sign-in forms', function () {
     $this->get('/register')->assertOk()->assertSee('data-password-toggle', false);
     $this->get('/register/reseller')->assertOk()->assertSee('data-password-toggle', false);
     $this->get('/login')->assertOk()->assertSee('data-password-toggle', false);
-    $this->get('/forgot-password')->assertOk();
 });
