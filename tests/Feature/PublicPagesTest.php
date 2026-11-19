@@ -102,3 +102,15 @@ test('account type selection and registration forms are mobile responsive', func
     $this->get('/register')->assertOk()->assertSee('.form{margin:24px auto;padding:20px 17px}', false);
     $this->get('/register/reseller')->assertOk()->assertSee('Preferred subdomain')->assertSee('business-slug', false);
 });
+
+test('account chooser uses a non-overlapping single-column mobile layout and readable footer links', function () {
+    $this->get('/get-started')
+        ->assertOk()
+        ->assertSee('account-choice-page', false)
+        ->assertSee('.account-choice-page .account-type-grid{grid-template-columns:minmax(0,1fr)!important}', false)
+        ->assertSee('overflow-wrap:anywhere', false);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('.public-footer .footer-col a,.app-footer a{font-size:14px;line-height:1.65;font-weight:400}', false);
+});
