@@ -71,6 +71,42 @@
       @media(max-width:420px){.home-section:has(.account-type-grid){padding:32px 14px}.account-type-grid>.card{padding:19px}.account-type-grid>.card .btn{width:100%;font-size:13px;padding:12px 10px}.account-type-grid>.card ul{padding-left:18px}}
       @media(max-width:480px){.form{margin:24px auto;padding:20px 17px}.form .row[style*="nowrap"]{flex-wrap:wrap!important;align-items:flex-start}.form .row[style*="nowrap"]>span{font-size:12px;overflow-wrap:anywhere}.form .btn{width:100%;white-space:normal}}
 
+    
+      /* Account chooser: prevent card and copy collisions at every phone width. */
+      .account-choice-page{width:100%;min-width:0;overflow:hidden}
+      .account-choice-inner{width:100%;min-width:0}
+      .account-choice-intro{width:100%;min-width:0}
+      .account-choice-page .account-type-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:stretch;gap:20px;width:100%;max-width:850px;margin:0 auto}
+      .account-choice-page .account-type-grid>.card{width:100%;max-width:100%;min-width:0;overflow-wrap:anywhere;word-break:normal;display:flex;flex-direction:column;align-items:stretch}
+      .account-choice-page .account-type-grid>.card>*{min-width:0;max-width:100%}
+      .account-choice-page .account-type-grid>.card .btn{width:100%;min-height:46px;white-space:normal;overflow-wrap:anywhere;line-height:1.4;margin-top:auto}
+      .account-choice-page .account-type-grid>.card ul{padding-left:19px;overflow-wrap:anywhere}
+      .public-footer .footer-col a,.app-footer a{font-size:14px;line-height:1.65;font-weight:400;padding:3px 0;overflow-wrap:anywhere}
+      .public-footer .footer-col a{margin:5px 0}
+      @media(max-width:760px){
+        .account-choice-page{padding:38px 16px!important;min-height:0!important}
+        .account-choice-page .account-choice-inner{max-width:100%!important}
+        .account-choice-page .account-choice-intro{max-width:100%!important;margin:0 auto 22px!important;padding:0 2px}
+        .account-choice-page .account-choice-intro .title{font-size:clamp(27px,7vw,34px)!important;line-height:1.18;overflow-wrap:normal}
+        .account-choice-page .account-type-grid{grid-template-columns:minmax(0,1fr)!important;gap:14px;width:100%;max-width:100%}
+        .account-choice-page .account-type-grid>.card{padding:22px!important;border-radius:15px}
+        .account-choice-page .account-type-grid>.card h2{font-size:21px!important;line-height:1.25}
+        .account-choice-page .account-type-grid>.card p,.account-choice-page .account-type-grid>.card li{font-size:14px;line-height:1.7}
+        .account-choice-page .account-type-grid>.card ul{margin:14px 0 20px}
+        .account-choice-page> .account-choice-inner>p{margin-top:20px!important}
+        .public-footer{padding:36px 18px 20px}
+        .footer-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px 16px}
+        .footer-col{min-width:0}
+        .public-footer .footer-col a{font-size:14px;line-height:1.6}
+      }
+      @media(max-width:380px){
+        .account-choice-page{padding:30px 12px!important}
+        .account-choice-page .account-type-grid>.card{padding:18px!important}
+        .account-choice-page .account-type-grid>.card .btn{font-size:13px;padding:11px 9px}
+        .footer-grid{grid-template-columns:minmax(0,1fr);gap:17px}
+        .footer-brand{grid-column:auto}
+      }
+
     </style>
     @stack('head')
 </head>
