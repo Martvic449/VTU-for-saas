@@ -67,3 +67,26 @@ test('shared visual system uses green branding without tilted preview elements',
         ->assertDontSee('#635bff')
         ->assertDontSee('rotate(.5deg)');
 });
+
+test('getting started and safety sections are responsive and have no stray newline marker', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('.steps-grid{grid-template-columns:1fr}', false)
+        ->assertSee('.safety-band{background:#f0f5f2', false)
+        ->assertDontSee('\\\\n<section class="safety-band">');
+});
+
+test('reseller account option uses the green brand palette', function () {
+    $this->get('/get-started')
+        ->assertOk()
+        ->assertSee('border-color:#cfe8dc', false)
+        ->assertSee('background:#e7f5ee;color:#087456', false)
+        ->assertDontSee('#5149ed');
+});
+
+test('description text uses readable regular-weight sizing', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('.feature-card p,.step-card p,.audience-card p,.service-tile p,.benefit-row p,.reseller-feature p,.trust-grid p,.faq-list details p{font-size:14px', false)
+        ->assertSee('font-weight:400', false);
+});
