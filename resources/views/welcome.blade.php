@@ -1,51 +1,80 @@
 @extends('layouts.app')
-@section('title', 'Buy digital services or build your VTU business')
+@section('title', 'Buy airtime and data or grow your VTU business')
 @section('content')
-<div class="wrap">
-  <section class="hero" style="max-width:980px;padding:76px 0 54px">
-    <span class="pill">Airtime · Data · Digital services · Reseller tools</span>
-    <h1>Everything digital. One simpler way to buy, sell and grow.</h1>
-    <p>Top up for yourself in a few steps, or build a digital services business with a dedicated reseller workspace. Choose the account that fits the way you want to use VTU SaaS.</p>
-    <div class="row" style="justify-content:flex-start;margin-top:28px">
-      <a class="btn" href="{{ route('account.type') }}">Choose your account <span aria-hidden="true">→</span></a>
-      <a class="btn secondary" href="{{ route('login') }}">Sign in</a>
+<section class="home-hero">
+  <div class="home-hero-inner">
+    <div class="hero-copy">
+      <span class="section-kicker">Digital services, made simpler</span>
+      <h1>Buy for yourself.<br>Build your business.<br><span>One clear platform.</span></h1>
+      <p>Whether you need a simple way to purchase digital services or want to run your own VTU reseller business, start with an account designed around you.</p>
+      <div class="hero-actions"><a class="btn" href="{{ route('account.type') }}">Choose your account <span aria-hidden="true">→</span></a><a class="btn secondary" href="{{ route('login') }}">Sign in to your account</a></div>
+      <div class="hero-proof"><span>Separate customer and reseller spaces</span><span>Secure account access</span><span>Clear transaction records</span></div>
     </div>
-    <p style="font-size:12px;margin-top:18px">Services, networks, prices and fulfilment depend on active supplier connections, availability and account eligibility.</p>
-  </section>
-
-  <section style="margin:0 0 62px">
-    <div class="section-head"><h2 class="title">What would you like to do?</h2><p>Start with the account made for your needs. You can use one sign-in page after registration.</p></div>
-    <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:20px">
-      <article class="card" style="padding:clamp(22px,3vw,34px)">
-        <span class="pill">Personal use</span>
-        <h3 style="font-size:23px;margin:16px 0 8px">I want to buy for myself</h3>
-        <p class="muted">Create a customer account to purchase airtime, data and other available digital services, then keep track of your wallet activity and purchase history.</p>
-        <ul class="muted" style="padding-left:19px;margin:18px 0"><li>Personal customer dashboard</li><li>Wallet and purchase history</li><li>Simple access to available services</li></ul>
-        <a class="btn" href="{{ route('register') }}">Create customer account</a>
-      </article>
-      <article class="card" style="padding:clamp(22px,3vw,34px);border-color:#b9e6d8">
-        <span class="pill" style="background:#e7f7f0;color:#087451">Business use</span>
-        <h3 style="font-size:23px;margin:16px 0 8px">I want to sell to customers</h3>
-        <p class="muted">Apply for a reseller workspace to run your own VTU business, manage customers and transactions, and build your digital services brand.</p>
-        <ul class="muted" style="padding-left:19px;margin:18px 0"><li>Dedicated business workspace</li><li>Customer and transaction management</li><li>Pathway to API and developer tools</li></ul>
-        <a class="btn" href="{{ route('register.reseller') }}">Apply for reseller account</a>
-      </article>
+    <div class="preview-shell" aria-label="Illustrative preview of the platform workspace">
+      <div class="preview-top"><div><small>Platform workspace preview</small><strong>Your digital services, organised</strong></div><span class="preview-tag">Illustrative preview</span></div>
+      <div class="preview-balance"><span class="preview-label">A single place to manage your activity</span><strong>Buy · Sell · Track</strong><small>Tools and views depend on your account type and enabled services.</small></div>
+      <div class="preview-services">
+        <div class="preview-service"><i>↗</i><b>Airtime</b><small>Top-ups</small></div>
+        <div class="preview-service"><i>▤</i><b>Data</b><small>Data bundles</small></div>
+        <div class="preview-service"><i>◎</i><b>More services</b><small>When enabled</small></div>
+      </div>
+      <div class="preview-activity"><div class="preview-activity-head"><span>Activity overview</span><span class="muted">Workspace preview</span></div><div class="preview-bars" aria-hidden="true"><span style="height:35%"></span><span style="height:52%"></span><span style="height:43%"></span><span style="height:68%"></span><span style="height:59%"></span><span style="height:77%"></span><span style="height:64%"></span><span style="height:88%"></span><span style="height:71%"></span><span style="height:81%"></span><span style="height:61%"></span><span style="height:93%"></span></div></div>
+      <div class="preview-foot"><i>✓</i><span><b>Account-specific workspace</b><br><span class="muted">Customers and resellers see the tools relevant to them.</span></span></div>
+      <p class="preview-disclaimer">Illustrative interface only. No live balances, provider status or transaction figures are represented.</p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="card" style="padding:clamp(22px,4vw,42px);margin-bottom:54px">
-    <div class="section-head"><h2 class="title">Built to support the next step</h2><p>Keep everyday purchases and business operations organised as your needs grow.</p></div>
-    <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:0">
-      <div><strong>For customers</strong><p class="muted">A personal account for supported purchases, wallet activity and receipts.</p></div>
-      <div><strong>For resellers</strong><p class="muted">A separate business workspace for your customers, services and transactions.</p></div>
-      <div><strong>For developers</strong><p class="muted">API credentials and webhook tools are managed through an approved reseller workspace.</p></div>
+<section class="home-section" id="features">
+  <div class="section-inner">
+    <div class="section-head"><span class="section-kicker">One platform, clear experiences</span><h2 class="title">The tools you need, without the guesswork.</h2><p class="section-intro">Choose a personal account for your own purchases, or a reseller account if you are building a digital services business. Each experience is organised around the work you need to do.</p></div>
+    <div class="feature-grid">
+      <article class="feature-card"><div class="feature-icon">↗</div><h3>Digital service purchases</h3><p>Find supported airtime, data and other available services in one organised customer experience.</p></article>
+      <article class="feature-card"><div class="feature-icon">▣</div><h3>Wallet and transaction records</h3><p>Review account activity and transaction history with clear records of what has happened.</p></article>
+      <article class="feature-card"><div class="feature-icon">⌂</div><h3>Dedicated reseller workspace</h3><p>Manage your reseller business, customer relationships and operational activity from a separate workspace.</p></article>
+      <article class="feature-card"><div class="feature-icon">⌘</div><h3>Developer tools pathway</h3><p>Approved reseller businesses can access API and webhook capabilities when configured and enabled.</p></article>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section style="max-width:760px;margin:0 auto 58px;text-align:center">
-    <h2 class="title">Already registered?</h2>
-    <p class="muted">Customers and resellers use the same secure sign-in page. We’ll direct you to the workspace associated with your account.</p>
-    <a class="btn secondary" href="{{ route('login') }}">Sign in to your account</a>
-  </section>
-</div>
+<section class="home-section alt" id="how-it-works">
+  <div class="section-inner">
+    <div class="steps-layout">
+      <div class="steps-copy"><span class="section-kicker">Getting started</span><h2 class="title">A simple start.<br>A clearer way forward.</h2><p class="section-intro">Choose the account that matches your goal. Your registration and workspace will follow that choice.</p><a class="btn secondary" style="margin-top:19px" href="{{ route('account.type') }}">See account options <span aria-hidden="true">→</span></a></div>
+      <div class="steps-grid">
+        <article class="step-card"><span class="step-number">01</span><h3>Choose your account</h3><p>Tell us whether you are here to buy for yourself or to operate a VTU reseller business.</p></article>
+        <article class="step-card"><span class="step-number">02</span><h3>Create your profile</h3><p>Complete the registration form for your selected account type and verify your details.</p></article>
+        <article class="step-card"><span class="step-number">03</span><h3>Sign in and get started</h3><p>Use the secure sign-in page. Your account role determines the workspace you can access.</p></article>
+      </div>
+    </div>
+    <div class="audience-grid">
+      <article class="audience-card"><div class="feature-icon">◎</div><div><h3>For everyday customers</h3><p>A personal account for supported purchases, wallet activity and your own transaction history.</p></div></article>
+      <article class="audience-card"><div class="feature-icon">▥</div><div><h3>For resellers and businesses</h3><p>A business workspace for managing your customers, services and VTU operations.</p></div></article>
+      <article class="audience-card"><div class="feature-icon">⌘</div><div><h3>For API developers</h3><p>Developer access is connected to an approved reseller business rather than a separate consumer account.</p></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="safety-band">
+  <div class="safety-inner"><div><span class="section-kicker">Designed with control in mind</span><h2 class="title" style="font-size:23px;margin-top:5px">Clear records. Controlled integrations.</h2><p class="muted" style="font-size:12px;max-width:620px;margin:0">Payment channels, service providers and fulfilment routes must be configured and verified before live transactions are enabled.</p></div><div class="safety-points"><span>Account-based access</span><span>Transaction records</span><span>Verified integrations</span></div></div>
+</section>
+
+<section class="home-section" id="faq">
+  <div class="section-inner faq-layout">
+    <div><span class="section-kicker">Frequently asked questions</span><h2 class="title">A few things you may be wondering.</h2><p class="section-intro">Not sure which account to choose? These answers will help you get started.</p><a class="btn secondary" style="margin-top:18px" href="{{ route('account.type') }}">Get started <span aria-hidden="true">→</span></a></div>
+    <div class="faq-list">
+      <details><summary>What is the difference between a customer and reseller account?</summary><p>A customer account is for buying supported digital services for personal use. A reseller account is for a person or business that wants to sell services to its own customers and manage a reseller workspace.</p></details>
+      <details><summary>Which account should I create if I only want to buy data or airtime?</summary><p>Choose the customer account. It is designed for personal purchases and your own account activity.</p></details>
+      <details><summary>What if I want to start my own VTU business?</summary><p>Choose the reseller account. You will submit your business details for review before the reseller workspace is activated.</p></details>
+      <details><summary>Do customers and resellers use different sign-in pages?</summary><p>They use the same secure sign-in page. After authentication, the platform directs each account to the workspace allowed by its account role and access status.</p></details>
+      <details><summary>Can I access the API as a customer?</summary><p>API and webhook tools are intended for approved reseller businesses. You should start with a reseller account if you need developer access.</p></details>
+      <details><summary>Are all payment providers and digital services available now?</summary><p>Availability depends on provider configuration, verification and activation. The platform will only offer live fulfilment routes after the required integrations have been configured and tested.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="closing-cta">
+  <div><small>A clearer way to buy and grow</small><h2>Start with the account that fits your goal.</h2><p>Create a personal account or apply for a reseller workspace today.</p></div>
+  <a class="btn" href="{{ route('account.type') }}">Choose your account <span aria-hidden="true">→</span></a>
+</section>
 @endsection
