@@ -73,7 +73,7 @@ test('getting started and safety sections are responsive and have no stray newli
         ->assertOk()
         ->assertSee('.steps-grid{grid-template-columns:1fr}', false)
         ->assertSee('.safety-band{background:#f0f5f2', false)
-        ->assertDontSee('\\\\n<section class="safety-band">');
+        ->assertDontSee('\\n<section class="safety-band">');
 });
 
 test('reseller account option uses the green brand palette', function () {
