@@ -90,3 +90,15 @@ test('description text uses readable regular-weight sizing', function () {
         ->assertSee('.feature-card p,.step-card p,.audience-card p,.service-tile p,.benefit-row p,.reseller-feature p,.trust-grid p,.faq-list details p{font-size:14px', false)
         ->assertSee('font-weight:400', false);
 });
+
+test('account type selection and registration forms are mobile responsive', function () {
+    $this->get('/get-started')
+        ->assertOk()
+        ->assertSee('account-type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))', false)
+        ->assertSee('@media(max-width:760px){.account-type-grid{grid-template-columns:1fr}', false)
+        ->assertSee('border-color:#cfe8dc', false)
+        ->assertSee('background:#e7f5ee;color:#087456', false);
+
+    $this->get('/register')->assertOk()->assertSee('.form{margin:24px auto;padding:20px 17px}', false);
+    $this->get('/register/reseller')->assertOk()->assertSee('.form .row[style*="nowrap"]{flex-wrap:wrap!important}', false);
+});
