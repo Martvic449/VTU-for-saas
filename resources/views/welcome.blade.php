@@ -102,8 +102,9 @@
     </div>
   </div>
 </section>
-\n<section class="safety-band">
-  <div class="safety-inner"><div><span class="section-kicker">Designed with control in mind</span><h2 class="title" style="font-size:23px;margin-top:5px">Clear records. Controlled integrations.</h2><p class="muted" style="font-size:12px;max-width:620px;margin:0">Payment channels, service providers and fulfilment routes must be configured and verified before live transactions are enabled.</p></div><div class="safety-points"><span>Account-based access</span><span>Transaction records</span><span>Verified integrations</span></div></div>
+
+<section class="safety-band">
+  <div class="safety-inner"><div><span class="section-kicker">Designed with control in mind</span><h2 class="title" style="font-size:23px;margin-top:5px">Clear records. Controlled integrations.</h2><p class="muted" style="max-width:620px;margin:0">Payment channels, service providers and fulfilment routes must be configured and verified before live transactions are enabled.</p></div><div class="safety-points"><span>Account-based access</span><span>Transaction records</span><span>Verified integrations</span></div></div>
 </section>
 
 <section class="home-section" id="faq">
