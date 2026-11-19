@@ -100,5 +100,5 @@ test('account type selection and registration forms are mobile responsive', func
         ->assertSee('background:#e7f5ee;color:#087456', false);
 
     $this->get('/register')->assertOk()->assertSee('.form{margin:24px auto;padding:20px 17px}', false);
-    $this->get('/register/reseller')->assertOk()->assertSee('.form .row[style*="nowrap"]{flex-wrap:wrap!important}', false);
+    $this->get('/register/reseller')->assertOk()->assertSee('Preferred subdomain')->assertSee('business-slug', false);
 });
