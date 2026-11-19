@@ -17,16 +17,16 @@
         <ul class="muted" style="padding-left:19px;line-height:2;margin:18px 0 24px"><li>Personal customer dashboard</li><li>Wallet and purchase history</li><li>Services enabled for customers</li></ul>
         <a class="btn" style="width:100%" href="{{ route('register') }}">Create customer account <span aria-hidden="true">→</span></a>
       </article>
-      <article class="card" style="padding:clamp(22px,4vw,34px);border-color:#d8d5ff">
-        <div class="feature-icon" style="width:43px;height:43px;font-size:19px;background:#e8e6ff">▥</div>
-        <span class="pill" style="background:#efeeff;color:#5149ed">Business use</span>
+      <article class="card" style="padding:clamp(22px,4vw,34px);border-color:#cfe8dc">
+        <div class="feature-icon" style="width:43px;height:43px;font-size:19px;background:#e7f5ee">▥</div>
+        <span class="pill" style="background:#e7f5ee;color:#087456">Business use</span>
         <h2 style="font-size:23px;margin:12px 0 7px">Reseller account</h2>
         <p class="muted">I want to sell digital services to my own customers and operate a VTU business.</p>
         <ul class="muted" style="padding-left:19px;line-height:2;margin:18px 0 24px"><li>Dedicated reseller workspace</li><li>Customer and transaction management</li><li>Pathway to developer API access</li></ul>
         <a class="btn" style="width:100%" href="{{ route('register.reseller') }}">Apply for reseller account <span aria-hidden="true">→</span></a>
       </article>
     </div>
-    <p class="muted" style="text-align:center;margin:25px 0 0">Already registered? <a href="{{ route('login') }}" style="color:var(--violet);font-weight:700">Sign in to your account</a></p>
+    <p class="muted" style="text-align:center;margin:25px 0 0">Already registered? <a href="{{ route('login') }}" style="color:var(--green-dark);font-weight:700">Sign in to your account</a></p>
   </div>
 </div>
 @endsection
