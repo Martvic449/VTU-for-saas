@@ -49,3 +49,11 @@ test('password visibility controls are available on customer, reseller and sign-
     $this->get('/register/reseller')->assertOk()->assertSee('data-password-toggle', false);
     $this->get('/login')->assertOk()->assertSee('data-password-toggle', false);
 });
+
+test('primary calls to action retain the green brand colour and hero has mobile layout rules', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('background:var(--green)', false)
+        ->assertSee('.hero-copy h1 br{display:none}', false)
+        ->assertSee('.hero-actions .btn{flex:1 1 100%', false);
+});
