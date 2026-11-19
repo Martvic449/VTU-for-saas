@@ -57,3 +57,13 @@ test('primary calls to action retain the green brand colour and hero has mobile 
         ->assertSee('.hero-copy h1 br{display:none}', false)
         ->assertSee('.hero-actions .btn{flex:1 1 100%', false);
 });
+
+test('shared visual system uses green branding without tilted preview elements', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('--violet:#0d9b76', false)
+        ->assertSee('transform:none', false)
+        ->assertSee('.sidebar{background:#102b27}', false)
+        ->assertDontSee('#635bff')
+        ->assertDontSee('rotate(.5deg)');
+});
