@@ -55,7 +55,54 @@
   </div>
 </section>
 
-<section class="safety-band">
+
+<section class="home-section" id="services">
+  <div class="section-inner">
+    <div class="section-head"><span class="section-kicker">Services in one place</span><h2 class="title">Everyday digital services, made easier to access.</h2><p class="section-intro">Explore the service categories available through your account. Actual availability depends on the services enabled on the platform.</p></div>
+    <div class="service-showcase">
+      <article class="service-tile"><span class="service-symbol">↗</span><div><h3>Airtime top-ups</h3><p>Convenient airtime purchases for supported networks.</p></div><span class="service-arrow">→</span></article>
+      <article class="service-tile"><span class="service-symbol">▤</span><div><h3>Mobile data</h3><p>Browse available data bundles and supported plans.</p></div><span class="service-arrow">→</span></article>
+      <article class="service-tile"><span class="service-symbol">▦</span><div><h3>More digital services</h3><p>Additional categories can appear as services are configured and activated.</p></div><span class="service-arrow">→</span></article>
+    </div>
+    <p class="service-note">Service catalogue and network availability may vary. Only services shown as available in your signed-in account can be purchased.</p>
+  </div>
+</section>
+
+<section class="home-section alt" id="customer-benefits">
+  <div class="section-inner benefits-layout">
+    <div class="benefits-copy"><span class="section-kicker">A better everyday experience</span><h2 class="title">Your purchases and activity, easier to follow.</h2><p class="section-intro">A personal customer account keeps the essentials together, so you can focus on the services you need rather than navigating a business dashboard.</p><a class="btn" style="margin-top:20px" href="{{ route('register') }}">Create customer account <span aria-hidden="true">→</span></a></div>
+    <div class="benefit-list">
+      <div class="benefit-row"><span>01</span><div><h3>A personal account space</h3><p>Sign in to the customer experience associated with your account.</p></div></div>
+      <div class="benefit-row"><span>02</span><div><h3>Clear transaction history</h3><p>Review your purchases and their recorded status.</p></div></div>
+      <div class="benefit-row"><span>03</span><div><h3>Account support</h3><p>Find the support pathway available to help with your account.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="home-section" id="reseller-tools">
+  <div class="section-inner">
+    <div class="section-head"><span class="section-kicker">For growing businesses</span><h2 class="title">A workspace built around your reseller operation.</h2><p class="section-intro">Start with a reseller application and, once approved, manage your business through a dedicated workspace.</p></div>
+    <div class="reseller-feature-grid">
+      <article class="reseller-feature"><span class="reseller-index">01 / OPERATIONS</span><h3>Manage your business workspace</h3><p>Keep your reseller activity and business account separate from personal customer use.</p></article>
+      <article class="reseller-feature"><span class="reseller-index">02 / CUSTOMERS</span><h3>Serve your own customers</h3><p>Use the reseller tools made available to your approved business to manage customer activity.</p></article>
+      <article class="reseller-feature"><span class="reseller-index">03 / INTEGRATIONS</span><h3>Build towards automation</h3><p>Eligible businesses can work towards API and webhook access after the required configuration and approval.</p></article>
+    </div>
+    <div class="reseller-cta"><div><strong>Ready to operate as a reseller?</strong><p>Choose the business account path to begin your application.</p></div><a class="btn" href="{{ route('register.reseller') }}">Apply as a reseller <span aria-hidden="true">→</span></a></div>
+  </div>
+</section>
+
+<section class="home-section alt" id="trust-and-control">
+  <div class="section-inner trust-layout">
+    <div><span class="section-kicker">Built for responsible operations</span><h2 class="title">Clarity and control at every step.</h2><p class="section-intro">A digital services platform needs more than a polished interface. Account access, transaction records and external integrations must be handled carefully.</p></div>
+    <div class="trust-grid">
+      <article><span class="trust-check">✓</span><h3>Account-based access</h3><p>Customer, reseller and platform roles are designed for distinct workspaces.</p></article>
+      <article><span class="trust-check">✓</span><h3>Recorded activity</h3><p>Transactions and operational events are recorded for review and reconciliation.</p></article>
+      <article><span class="trust-check">✓</span><h3>Controlled integrations</h3><p>Payment and fulfilment connections require configuration and verification before live use.</p></article>
+      <article><span class="trust-check">✓</span><h3>Transparent availability</h3><p>Services are presented according to what has actually been enabled for the platform.</p></article>
+    </div>
+  </div>
+</section>
+\n<section class="safety-band">
   <div class="safety-inner"><div><span class="section-kicker">Designed with control in mind</span><h2 class="title" style="font-size:23px;margin-top:5px">Clear records. Controlled integrations.</h2><p class="muted" style="font-size:12px;max-width:620px;margin:0">Payment channels, service providers and fulfilment routes must be configured and verified before live transactions are enabled.</p></div><div class="safety-points"><span>Account-based access</span><span>Transaction records</span><span>Verified integrations</span></div></div>
 </section>
 
