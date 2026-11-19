@@ -8,7 +8,7 @@
       <h1 class="title" style="font-size:clamp(30px,4vw,42px);margin-top:10px">Which account is right for you?</h1>
       <p class="section-intro" style="margin:0 auto">Choose how you plan to use the platform. This helps us set up the right account and workspace from the start.</p>
     </div>
-    <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));max-width:850px;margin:0 auto">
+    <div class="account-type-grid" style="max-width:850px;margin:0 auto">
       <article class="card" style="padding:clamp(22px,4vw,34px)">
         <div class="feature-icon" style="width:43px;height:43px;font-size:19px">◎</div>
         <span class="pill">Personal use</span>
