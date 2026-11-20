@@ -51,6 +51,17 @@ final class CustomerDashboardController
         return view('tenant.customer-dashboard', compact('wallet', 'balance', 'transactions', 'deposits', 'paymentGateways', 'services', 'purchaseKeys', 'tenantApplications'));
     }
 
+    public function activity(Request $request)
+    {
+        $user = $request->user();
+        abort_if($user->hasAnyRole(['super-admin', 'operations-admin', 'finance-admin', 'kyc-reviewer']), 404);
+        $wallet = DB::table('wallets')->where('owner_type', 'user')->where('owner_id', $user->id)->where('currency', 'NGN')->first();
+        $transactions = $wallet ? DB::table('transactions')->where('wallet_id', $wallet->id)->latest()->paginate(20, ['*'], 'transactions_page') : collect();
+        $deposits = $wallet ? DB::table('deposits')->where('wallet_id', $wallet->id)->latest()->paginate(20, ['*'], 'deposits_page') : collect();
+
+        return view('tenant.customer-activity', compact('transactions', 'deposits'));
+    }
+
     public function purchase(Request $request, VtuTransactionService $transactions): RedirectResponse
     {
         $user = $request->user();
