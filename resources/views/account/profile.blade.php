@@ -10,7 +10,7 @@
   <p class="muted">Your email address is used for sign-in and important account notifications.</p>
   <div style="margin:14px 0">
     <span class="stat-label">Current verification status</span>
-    @if($user->hasVerifiedEmail())
+    @if($isEmailVerified)
       <span class="pill successful">Verified</span>
     @else
       <span class="pill pending">Not verified</span>
