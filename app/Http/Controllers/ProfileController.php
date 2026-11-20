@@ -10,7 +10,12 @@ final class ProfileController
 {
     public function edit(Request $request)
     {
-        return view('account.profile', ['user' => $request->user()]);
+        $user = $request->user();
+
+        return view('account.profile', [
+            'user' => $user,
+            'isEmailVerified' => $user->email_verified_at !== null,
+        ]);
     }
 
     public function update(Request $request): RedirectResponse
