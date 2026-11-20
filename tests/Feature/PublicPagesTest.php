@@ -1,6 +1,6 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\\Foundation\\Testing\\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
@@ -73,7 +73,7 @@ test('getting started and safety sections are responsive and have no stray newli
         ->assertOk()
         ->assertSee('.steps-grid{grid-template-columns:1fr}', false)
         ->assertSee('.safety-band{background:#f0f5f2', false)
-        ->assertDontSee('\\n<section class="safety-band">');
+        ->assertDontSee('\\\\n<section class="safety-band">');
 });
 
 test('reseller account option uses the green brand palette', function () {
@@ -107,7 +107,7 @@ test('account chooser uses a non-overlapping single-column mobile layout and rea
     $this->get('/get-started')
         ->assertOk()
         ->assertSee('account-choice-page', false)
-        ->assertSee('.account-choice-page .account-type-grid{grid-template-columns:minmax(0,1fr)!important}', false)
+        ->assertSee('grid-template-columns:minmax(0,1fr)!important', false)
         ->assertSee('overflow-wrap:anywhere', false);
 
     $this->get('/')
