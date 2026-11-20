@@ -1,9 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Choose your account type')
 @section('content')
-<div class="home-section" style="min-height:70vh">
-  <div class="section-inner" style="max-width:960px">
-    <div style="max-width:690px;text-align:center;margin:8px auto 30px">
+<div class="home-section account-choice-page" style="min-height:70vh">
+  <div class="section-inner account-choice-inner" style="max-width:960px">
+    <div class="account-choice-intro" style="max-width:690px;text-align:center;margin:8px auto 30px">
       <span class="section-kicker">A good place to begin</span>
       <h1 class="title" style="font-size:clamp(30px,4vw,42px);margin-top:10px">Which account is right for you?</h1>
       <p class="section-intro" style="margin:0 auto">Choose how you plan to use the platform. This helps us set up the right account and workspace from the start.</p>

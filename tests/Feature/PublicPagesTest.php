@@ -73,7 +73,7 @@ test('getting started and safety sections are responsive and have no stray newli
         ->assertOk()
         ->assertSee('.steps-grid{grid-template-columns:1fr}', false)
         ->assertSee('.safety-band{background:#f0f5f2', false)
-        ->assertDontSee('\\n<section class="safety-band">');
+        ->assertDontSee('\\\\n<section class="safety-band">');
 });
 
 test('reseller account option uses the green brand palette', function () {
@@ -101,4 +101,13 @@ test('account type selection and registration forms are mobile responsive', func
 
     $this->get('/register')->assertOk()->assertSee('.form{margin:24px auto;padding:20px 17px}', false);
     $this->get('/register/reseller')->assertOk()->assertSee('Preferred subdomain')->assertSee('business-slug', false);
+});
+
+test('account chooser uses a non-overlapping single-column mobile layout and readable footer links', function () {
+    $this->get('/get-started')
+        ->assertOk()
+        ->assertSee('account-choice-page', false)
+        ->assertSee('grid-template-columns:minmax(0,1fr)!important', false)
+        ->assertSee('overflow-wrap:anywhere', false)
+        ->assertSee('.public-footer .footer-col a,.app-footer a{font-size:14px;line-height:1.65;font-weight:400;padding:3px 0;overflow-wrap:anywhere}', false);
 });
