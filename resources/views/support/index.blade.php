@@ -37,7 +37,7 @@
     @forelse($tickets as $ticket)
       <div class="support-ticket">
         <div class="support-ticket-heading"><strong>{{ $ticket->subject }}</strong><span class="pill {{ $ticket->status }}">{{ str_replace('_',' ',$ticket->status) }}</span></div>
-        <div class="muted support-ticket-meta">{{ $ticket->reference }} · {{ \\Illuminate\\Support\\Carbon::parse($ticket->created_at)->format('d M Y') }} · {{ ucfirst($ticket->priority) }} priority</div>
+        <div class="muted support-ticket-meta">{{ $ticket->reference }} · {{ \Illuminate\Support\Carbon::parse($ticket->created_at)->format('d M Y') }} · {{ ucfirst($ticket->priority) }} priority</div>
       </div>
     @empty
       <div class="empty">You have not opened a support request yet.</div>
