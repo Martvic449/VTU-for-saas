@@ -46,7 +46,7 @@ final class CustomerDashboardController
             $service->validation_schema = json_decode($service->validation_schema ?: '{}', true) ?: [];
             $purchaseKeys[$service->service_code] = (string) Str::uuid();
         }
-        return view('tenant.customer-dashboard', compact('wallet', 'balance', 'transactions', 'deposits', 'paymentGateways', 'services', 'purchaseKeys', 'tenantApplications'));
+        return view('tenant.customer-dashboard', compact('wallet', 'balance', 'paymentGateways', 'services', 'purchaseKeys', 'tenantApplications'));
     }
 
     public function activity(Request $request)
