@@ -13,6 +13,7 @@ use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\TenantOnboardingWebController;
 use App\Http\Controllers\DepositController;
 use App\Http\Controllers\TenantCustomerController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -62,6 +63,11 @@ Route::middleware('auth')->group(function (): void {
         $request->user()->sendEmailVerificationNotification();
         return back()->with('status', 'A fresh verification link has been sent.');
     })->middleware('throttle:6,1')->name('verification.send');
+});
+
+Route::middleware(['auth', 'active.user', 'privileged.mfa'])->group(function (): void {
+    Route::get('/account/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/account/profile', [ProfileController::class, 'update'])->middleware('throttle:5,1')->name('profile.update');
 });
 
 Route::post('/logout', [WebAuthController::class, 'logout'])->middleware('auth')->name('logout');
