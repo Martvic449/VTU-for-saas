@@ -5,7 +5,7 @@
 .customer-quick-actions .btn{min-height:42px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 .customer-dashboard-section{scroll-margin-top:88px}
 .customer-activity .card{min-width:0}
-@media(max-width:620px){.customer-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.customer-quick-actions .btn{width:100%;padding:11px 9px;font-size:12px;line-height:1.35;white-space:normal;text-align:center}.customer-quick-actions .btn:last-child{grid-column:1/-1}.customer-dashboard-section{scroll-margin-top:76px}}
+@media(max-width:620px){.customer-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.customer-quick-actions .btn{width:100%;padding:11px 9px;font-size:12px;line-height:1.35;white-space:normal;text-align:center}.customer-dashboard-section{scroll-margin-top:76px}}
 </style>
 @endpush
 @section('title','My dashboard')
