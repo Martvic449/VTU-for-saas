@@ -108,9 +108,6 @@ test('account chooser uses a non-overlapping single-column mobile layout and rea
         ->assertOk()
         ->assertSee('account-choice-page', false)
         ->assertSee('grid-template-columns:minmax(0,1fr)!important', false)
-        ->assertSee('overflow-wrap:anywhere', false);
-
-    $this->get('/')
-        ->assertOk()
-        ->assertSee('.public-footer .footer-col a,.app-footer a{font-size:14px;line-height:1.65;font-weight:400}', false);
+        ->assertSee('overflow-wrap:anywhere', false)
+        ->assertSee('.public-footer .footer-col a,.app-footer a{font-size:14px;line-height:1.65;font-weight:400;padding:3px 0;overflow-wrap:anywhere}', false);
 });
