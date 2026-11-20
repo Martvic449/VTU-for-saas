@@ -21,8 +21,6 @@ final class CustomerDashboardController
         }
         $wallet = DB::table('wallets')->where('owner_type', 'user')->where('owner_id', $user->id)->where('currency', 'NGN')->first();
         $balance = $wallet ? $balances->availableMinor((int) $wallet->id) : 0;
-        $transactions = $wallet ? DB::table('transactions')->where('wallet_id', $wallet->id)->latest()->limit(10)->get() : collect();
-        $deposits = $wallet ? DB::table('deposits')->where('wallet_id', $wallet->id)->latest()->limit(10)->get() : collect();
         $paymentGateways = app(\App\Services\Payments\PaymentGatewayRegistry::class)->enabled();
         $tenantApplications = DB::table('tenant_user')->join('tenants', 'tenants.id', '=', 'tenant_user.tenant_id')->leftJoin('tenant_domains', function ($join) { $join->on('tenant_domains.tenant_id', '=', 'tenants.id')->where('tenant_domains.is_primary', true); })->where('tenant_user.user_id', $user->id)->select('tenants.id','tenants.name','tenants.slug','tenants.status','tenant_domains.hostname','tenant_domains.verified_at','tenant_domains.tls_status')->get();
         $services = DB::table('service_catalogue')->where('status', 'active')->orderBy('category')->orderBy('name')->get();
@@ -49,6 +47,17 @@ final class CustomerDashboardController
             $purchaseKeys[$service->service_code] = (string) Str::uuid();
         }
         return view('tenant.customer-dashboard', compact('wallet', 'balance', 'transactions', 'deposits', 'paymentGateways', 'services', 'purchaseKeys', 'tenantApplications'));
+    }
+
+    public function activity(Request $request)
+    {
+        $user = $request->user();
+        abort_if($user->hasAnyRole(['super-admin', 'operations-admin', 'finance-admin', 'kyc-reviewer']), 404);
+        $wallet = DB::table('wallets')->where('owner_type', 'user')->where('owner_id', $user->id)->where('currency', 'NGN')->first();
+        $transactions = $wallet ? DB::table('transactions')->where('wallet_id', $wallet->id)->latest()->paginate(20, ['*'], 'transactions_page') : collect();
+        $deposits = $wallet ? DB::table('deposits')->where('wallet_id', $wallet->id)->latest()->paginate(20, ['*'], 'deposits_page') : collect();
+
+        return view('tenant.customer-activity', compact('transactions', 'deposits'));
     }
 
     public function purchase(Request $request, VtuTransactionService $transactions): RedirectResponse

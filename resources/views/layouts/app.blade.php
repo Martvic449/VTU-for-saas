@@ -130,7 +130,7 @@
       @elseif($user->hasRole('tenant-owner'))
         <a href="{{ route('dashboard') }}"><i class="side-dot"></i>My account</a>
       @else
-        <a href="{{ route('dashboard') }}"><i class="side-dot"></i>My dashboard</a><a href="{{ route('dashboard') }}#wallet-funding"><i class="side-dot"></i>Fund wallet</a><a href="{{ route('dashboard') }}#digital-services"><i class="side-dot"></i>Buy digital services</a><a href="{{ route('dashboard') }}#account-activity"><i class="side-dot"></i>Transactions & deposits</a><a href="{{ route('support.index') }}"><i class="side-dot"></i>Help & support</a>
+        <a href="{{ route('dashboard') }}"><i class="side-dot"></i>My dashboard</a><a href="{{ route('dashboard') }}#wallet-funding"><i class="side-dot"></i>Fund wallet</a><a href="{{ route('dashboard') }}#digital-services"><i class="side-dot"></i>Buy digital services</a><a href="{{ route('customer.activity') }}"><i class="side-dot"></i>Transaction history</a><a href="{{ route('support.index') }}"><i class="side-dot"></i>Help & support</a>
       @endif
     </nav>
     <div class="nav-label">Account</div><nav class="side-nav"><a href="{{ route('support.index') }}"><i class="side-dot"></i>Support centre</a><form method="post" action="{{ route('logout') }}">@csrf<button type="submit" style="width:100%;padding:10px 13px;border:0;border-radius:8px;background:none;color:var(--nav-muted);font-size:13px;font-weight:600;text-align:left;cursor:pointer"><i class="side-dot" style="display:inline-block;margin-right:10px"></i>Sign out</button></form></nav>
