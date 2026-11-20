@@ -13,6 +13,7 @@ it('provides authenticated profile email changes with fresh email verification',
     expect($controller)
         ->toContain("'current_password' => ['required', 'current_password']")
         ->toContain("'email_verified_at' => null")
+        ->toContain("'isEmailVerified' => $user->email_verified_at !== null")
         ->toContain('$user->sendEmailVerificationNotification()')
         ->toContain("redirect()->route('verification.notice')");
 
@@ -21,7 +22,11 @@ it('provides authenticated profile email changes with fresh email verification',
         ->toContain('name="email"')
         ->toContain('name="current_password"');
 
-    expect($layout)->toContain("route('profile.edit')");
+    expect($layout)
+        ->toContain("route('profile.edit')")
+        ->toContain('class="sidebar-close"')
+        ->toContain('aria-label="Close navigation"')
+        ->toContain('onclick="closeAppSidebar()"');
 });
 
 it('uses valid Carbon class references on customer activity and support pages', function () {
