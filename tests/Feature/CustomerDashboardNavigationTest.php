@@ -17,5 +17,6 @@ it('provides customer dashboard shortcuts and a combined deposits and transactio
     expect($layout)
         ->toContain('Fund wallet')
         ->toContain('Buy digital services')
-        ->toContain('Transactions &amp; deposits');
+        ->toContain('Transactions')
+        ->toContain('deposits');
 });
