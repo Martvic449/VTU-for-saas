@@ -113,6 +113,10 @@
 <body><div class="shell">
 @if(auth()->check())
 @php($user=auth()->user())
+@php($announcementAudience = $user->hasAnyRole(['tenant-owner','tenant-staff','tenant-admin']) ? 'tenants' : 'customers')
+@php($currentTenant = request()->attributes->get('tenant'))
+@php($dismissedAnnouncements = session('dismissed_announcements', []))
+@php($visibleAnnouncements = \Illuminate\Support\Facades\DB::table('platform_announcements')->where('status','published')->whereIn('audience',[$announcementAudience,'both'])->where(function($q){$q->whereNull('starts_at')->orWhere('starts_at','<=',now());})->where(function($q){$q->whereNull('ends_at')->orWhere('ends_at','>=',now());})->where(function($q) use ($currentTenant){$q->whereNull('tenant_id');if($currentTenant)$q->orWhere('tenant_id',$currentTenant->id);})->where(function($q) use ($user){$q->whereNull('user_id')->orWhere('user_id',$user->id);})->whereNotIn('id',$dismissedAnnouncements)->orderByRaw("CASE priority WHEN 'critical' THEN 0 WHEN 'important' THEN 1 ELSE 2 END")->orderByDesc('created_at')->limit(10)->get())
 <div class="app-shell">
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeAppSidebar()" aria-hidden="true"></div>
   <aside class="sidebar" id="appSidebar" aria-label="Main navigation"><div class="sidebar-heading"><a class="brand" href="{{ route('dashboard') }}"><span class="brand-mark">V</span>{{ config('app.name', 'VTU SaaS') }}</a><button class="sidebar-close" type="button" onclick="closeAppSidebar()" aria-label="Close navigation"><span aria-hidden="true">×</span></button></div>
@@ -130,12 +134,39 @@
       @elseif($user->hasRole('tenant-owner'))
         <a href="{{ route('dashboard') }}"><i class="side-dot"></i>My account</a>
       @else
-        <a href="{{ route('dashboard') }}"><i class="side-dot"></i>My dashboard</a><a href="{{ route('dashboard') }}#wallet-funding"><i class="side-dot"></i>Fund wallet</a><a href="{{ route('dashboard') }}#digital-services"><i class="side-dot"></i>Buy digital services</a><a href="{{ route('customer.activity') }}"><i class="side-dot"></i>Transaction history</a><a href="{{ route('support.index') }}"><i class="side-dot"></i>Help & support</a>
+        <a href="{{ route('dashboard') }}"><i class="side-dot"></i>My dashboard</a><a href="{{ route('dashboard') }}#wallet-funding"><i class="side-dot"></i>Fund wallet</a><a href="{{ route('dashboard') }}#digital-services"><i class="side-dot"></i>Buy digital services</a><a href="{{ route('customer.activity') }}"><i class="side-dot"></i>Transaction history</a><a href="{{ route('support.index') }}"><i class="side-dot"></i>Help Centre</a>
       @endif
     </nav>
-    <div class="nav-label">Account</div><nav class="side-nav"><a href="{{ route('profile.edit') }}"><i class="side-dot"></i>Profile settings</a><a href="{{ route('support.index') }}"><i class="side-dot"></i>Support centre</a><form method="post" action="{{ route('logout') }}">@csrf<button type="submit" style="width:100%;padding:10px 13px;border:0;border-radius:8px;background:none;color:var(--nav-muted);font-size:13px;font-weight:600;text-align:left;cursor:pointer"><i class="side-dot" style="display:inline-block;margin-right:10px"></i>Sign out</button></form></nav>
+    <div class="nav-label">Account</div><nav class="side-nav"><a href="{{ route('profile.edit') }}"><i class="side-dot"></i>Profile settings</a><a href="{{ route('support.index') }}"><i class="side-dot"></i>Help Centre</a><a href="{{ route('support.contact') }}"><i class="side-dot"></i>Contact support</a><form method="post" action="{{ route('logout') }}">@csrf<button type="submit" style="width:100%;padding:10px 13px;border:0;border-radius:8px;background:none;color:var(--nav-muted);font-size:13px;font-weight:600;text-align:left;cursor:pointer"><i class="side-dot" style="display:inline-block;margin-right:10px"></i>Sign out</button></form></nav>
   </aside>
-  <section class="app-main"><header class="app-topbar"><div class="row" style="justify-content:flex-start"><button class="btn secondary menu-toggle" onclick="toggleAppSidebar()" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="appSidebar">☰</button><div><div style="font-weight:700;font-size:14px">{{ config('app.name','VTU SaaS') }}</div><div class="muted" style="font-size:11px">{{ $user->hasAnyRole(['super-admin','operations-admin','finance-admin','kyc-reviewer']) ? 'Platform workspace' : ($user->hasRole('tenant-owner') ? 'Reseller workspace' : 'Customer workspace') }}</div></div></div><div class="user"><div class="avatar">{{ strtoupper(substr($user->name,0,1)) }}</div><div><div style="font-size:12px;font-weight:700">{{ $user->name }}</div><div class="muted" style="font-size:11px">{{ $user->getRoleNames()->first() ?? 'Customer' }}</div></div></div></header>
+  <section class="app-main">
+    @if($visibleAnnouncements->isNotEmpty())
+      <style>
+        .announcement-ticker{display:flex;align-items:center;gap:12px;overflow:hidden;padding:10px 14px;background:#e9f6f0;border-bottom:1px solid #cfe8dc;color:#145b43}
+        .announcement-ticker.important{background:#fff6df;border-color:#f0dfb4;color:#825700}
+        .announcement-ticker.critical{background:#fff0ef;border-color:#f2c9c5;color:#982b24}
+        .announcement-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+        .announcement-window{overflow:hidden;min-width:0;flex:1}
+        .announcement-track{display:flex;width:max-content;animation:announcement-scroll 38s linear infinite;gap:48px}
+        .announcement-ticker:hover .announcement-track{animation-play-state:paused}
+        .announcement-item{white-space:nowrap;font-size:13px;font-weight:600}
+        .announcement-item strong{margin-right:8px}
+        .announcement-dismiss{border:0;background:transparent;color:inherit;font-size:20px;cursor:pointer;padding:0 5px}
+        @keyframes announcement-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+        @media(prefers-reduced-motion:reduce){.announcement-track{animation:none;white-space:normal;width:auto;flex-wrap:wrap}}
+      </style>
+      <div class="announcement-ticker {{ $visibleAnnouncements->contains(fn($a)=>$a->priority==='critical') ? 'critical' : ($visibleAnnouncements->contains(fn($a)=>$a->priority==='important') ? 'important' : '') }}" role="region" aria-label="Platform announcements">
+        <span class="announcement-label">Notice</span>
+        <div class="announcement-window"><div class="announcement-track">
+          @foreach($visibleAnnouncements as $announcement)<span class="announcement-item"><strong>{{ $announcement->title }}</strong>{{ $announcement->message }}</span>@endforeach
+          @foreach($visibleAnnouncements as $announcement)<span class="announcement-item" aria-hidden="true"><strong>{{ $announcement->title }}</strong>{{ $announcement->message }}</span>@endforeach
+        </div></div>
+        @foreach($visibleAnnouncements->where('is_dismissible',true) as $announcement)
+          <form method="post" action="{{ route('announcements.dismiss',$announcement->id) }}">@csrf<button class="announcement-dismiss" type="submit" aria-label="Dismiss announcement">×</button></form>
+        @endforeach
+      </div>
+    @endif
+    <header class="app-topbar"><div class="row" style="justify-content:flex-start"><button class="btn secondary menu-toggle" onclick="toggleAppSidebar()" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="appSidebar">☰</button><div><div style="font-weight:700;font-size:14px">{{ config('app.name','VTU SaaS') }}</div><div class="muted" style="font-size:11px">{{ $user->hasAnyRole(['super-admin','operations-admin','finance-admin','kyc-reviewer']) ? 'Platform workspace' : ($user->hasRole('tenant-owner') ? 'Reseller workspace' : 'Customer workspace') }}</div></div></div><div class="user"><div class="avatar">{{ strtoupper(substr($user->name,0,1)) }}</div><div><div style="font-size:12px;font-weight:700">{{ $user->name }}</div><div class="muted" style="font-size:11px">{{ $user->getRoleNames()->first() ?? 'Customer' }}</div></div></div></header>
     @if(session('status') || $errors->any())<div class="app-content" style="padding-bottom:0">@if(session('status'))<div class="alert">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert" style="background:#fff0ef;color:#a52b24">{{ $errors->first() }}</div>@endif</div>@endif
     <main class="app-content">@yield('content')</main><footer class="app-footer"><div class="row"><span>Secure digital services infrastructure · {{ date('Y') }}</span><span><a href="{{ route('legal.privacy') }}">Privacy</a> · <a href="{{ route('legal.terms') }}">Terms</a></span></div></footer>
   </section>
