@@ -117,17 +117,19 @@ $user = auth()->user();
 $announcementAudience = $user->hasAnyRole(['tenant-owner', 'tenant-staff', 'tenant-admin']) ? 'tenants' : 'customers';
 $currentTenant = request()->attributes->get('tenant');
 $dismissedAnnouncements = session('dismissed_announcements', []);
-$visibleAnnouncements = \\Illuminate\\Support\\Facades\\DB::table('platform_announcements')
-    ->where('status', 'published')
-    ->whereIn('audience', [$announcementAudience, 'both'])
-    ->where(function ($query) { $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()); })
-    ->where(function ($query) { $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()); })
-    ->where(function ($query) use ($currentTenant) { $query->whereNull('tenant_id'); if ($currentTenant) $query->orWhere('tenant_id', $currentTenant->id); })
-    ->where(function ($query) use ($user) { $query->whereNull('user_id')->orWhere('user_id', $user->id); })
-    ->whereNotIn('id', $dismissedAnnouncements)
-    ->orderByRaw("CASE priority WHEN 'critical' THEN 0 WHEN 'important' THEN 1 ELSE 2 END")
-    ->orderByDesc('created_at')->limit(10)->get();
-@endphp
+$visibleAnnouncements = collect();
+if (\\Illuminate\\Support\\Facades\\Schema::hasTable('platform_announcements')) {
+    $visibleAnnouncements = \\Illuminate\\Support\\Facades\\DB::table('platform_announcements')
+        ->where('status', 'published')
+        ->whereIn('audience', [$announcementAudience, 'both'])
+        ->where(function ($query) { $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()); })
+        ->where(function ($query) { $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()); })
+        ->where(function ($query) use ($currentTenant) { $query->whereNull('tenant_id'); if ($currentTenant) $query->orWhere('tenant_id', $currentTenant->id); })
+        ->where(function ($query) use ($user) { $query->whereNull('user_id')->orWhere('user_id', $user->id); })
+        ->whereNotIn('id', $dismissedAnnouncements)
+        ->orderByRaw("CASE priority WHEN 'critical' THEN 0 WHEN 'important' THEN 1 ELSE 2 END")
+        ->orderByDesc('created_at')->limit(10)->get();
+}@endphp
 <div class="app-shell">
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeAppSidebar()" aria-hidden="true"></div>
   <aside class="sidebar" id="appSidebar" aria-label="Main navigation"><div class="sidebar-heading"><a class="brand" href="{{ route('dashboard') }}"><span class="brand-mark">V</span>{{ config('app.name', 'VTU SaaS') }}</a><button class="sidebar-close" type="button" onclick="closeAppSidebar()" aria-label="Close navigation"><span aria-hidden="true">×</span></button></div>
