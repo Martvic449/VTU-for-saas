@@ -126,7 +126,7 @@ final class WebAuthController
     public function logout(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
-        $request->session()->flush();
+        $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('login');
     }
