@@ -19,9 +19,9 @@
 }
 </style>
 @endpush
-@section('title','Help & support')
+@section('title','Contact support')
 @section('content')
-<div class="section-head"><h1 class="title">Help & support</h1><p>Send a support request and track its status. Never include passwords, API secrets, full card details or identity numbers in a ticket.</p></div>
+<div class="section-head"><h1 class="title">Contact support</h1><p><a href="{{ route('support.index') }}" style="color:var(--green-dark);font-weight:700">← Back to Help Centre</a></p><p>Send a support request and track its status. Never include passwords, API secrets, full card details or identity numbers in a ticket.</p></div>
 <div class="support-layout">
   <div class="card">
     <h3 style="margin-top:0">Create support request</h3>
