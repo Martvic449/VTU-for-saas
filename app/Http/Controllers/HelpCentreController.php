@@ -74,7 +74,8 @@ final class HelpCentreController
             ->select('platform_announcements.*', 'tenants.name as tenant_name')->orderByDesc('platform_announcements.created_at')->paginate(15, ['*'], 'announcements');
         $categories = DB::table('knowledge_categories')->orderBy('sort_order')->orderBy('name')->get();
         $tenants = DB::table('tenants')->whereIn('status', ['active', 'pending'])->orderBy('name')->get();
-        return view('platform.content-management', compact('articles', 'announcements', 'categories', 'tenants'));
+        $users = DB::table('users')->select('id', 'name', 'email')->orderBy('name')->limit(500)->get();
+        return view('platform.content-management', compact('articles', 'announcements', 'categories', 'tenants', 'users'));
     }
 
     public function saveCategory(Request $request): RedirectResponse
