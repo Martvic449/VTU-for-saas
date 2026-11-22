@@ -16,6 +16,7 @@ function helpCentreUser(string $role = 'customer'): User
         'status' => 'active',
         'email_verified_at' => now(),
     ]);
+    $user->forceFill(['email_verified_at' => now()])->save();
     $user->assignRole($role);
     return $user;
 }
@@ -26,8 +27,9 @@ it('signs out the authenticated web user and clears the session', function () {
     $this->actingAs($user)->withSession(['temporary-value' => 'should disappear'])
         ->post(route('logout'))
         ->assertRedirect(route('login'))
-        ->assertSessionMissing('temporary-value')
-        ->assertGuest();
+        ->assertSessionMissing('temporary-value');
+
+    $this->assertGuest();
 });
 
 it('shows only knowledge articles published for the signed-in audience', function () {
