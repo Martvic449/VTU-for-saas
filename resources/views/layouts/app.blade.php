@@ -118,8 +118,8 @@ $announcementAudience = $user->hasAnyRole(['tenant-owner', 'tenant-staff', 'tena
 $currentTenant = request()->attributes->get('tenant');
 $dismissedAnnouncements = session('dismissed_announcements', []);
 $visibleAnnouncements = collect();
-if (\Illuminate\\Support\\Facades\\Schema::hasTable('platform_announcements')) {
-    $visibleAnnouncements = \Illuminate\\Support\\Facades\\DB::table('platform_announcements')
+if (\Illuminate\Support\Facades\Schema::hasTable('platform_announcements')) {
+    $visibleAnnouncements = \Illuminate\Support\Facades\DB::table('platform_announcements')
         ->where('status', 'published')
         ->whereIn('audience', [$announcementAudience, 'both'])
         ->where(function ($query) { $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()); })
