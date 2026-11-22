@@ -13,7 +13,7 @@ it('provides authenticated profile email changes with fresh email verification',
     expect($controller)
         ->toContain("'current_password' => ['required', 'current_password']")
         ->toContain("'email_verified_at' => null")
-        ->toContain("'isEmailVerified' => $user->email_verified_at !== null")
+        ->toContain(''isEmailVerified' => $user->email_verified_at !== null')
         ->toContain('$user->sendEmailVerificationNotification()')
         ->toContain("redirect()->route('verification.notice')");
 
