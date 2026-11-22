@@ -55,6 +55,8 @@ final class WebAuthController
             return redirect()->route('verification.notice');
         }
         if ($user->hasAnyRole(['super-admin', 'operations-admin', 'finance-admin', 'kyc-reviewer'])) {
+            // Rotate the pre-authentication session before storing the MFA challenge state.
+            $request->session()->regenerate();
             $request->session()->put('pending_mfa_user_id', $user->id);
             return $user->mfa_confirmed_at ? redirect()->route('mfa.challenge') : redirect()->route('mfa.setup');
         }
@@ -88,10 +90,11 @@ final class WebAuthController
         }
         $user->forceFill(['last_login_at' => now(), 'failed_login_attempts' => 0, 'locked_until' => null])->save();
         Auth::login($user);
+        // Rotate the session after authentication, then write the MFA marker to the new session.
         $request->session()->forget('pending_mfa_user_id');
-        $request->session()->put('mfa_verified', true);
         $request->session()->regenerate();
-        return redirect()->route('dashboard');
+        $request->session()->put('mfa_verified', true);
+        return redirect()->route('platform.dashboard');
     }
 
     public function showSetup(Request $request, TotpService $totp)
@@ -117,10 +120,11 @@ final class WebAuthController
         $user->forceFill(['mfa_confirmed_at' => now()])->save();
         $user->forceFill(['last_login_at' => now(), 'failed_login_attempts' => 0, 'locked_until' => null])->save();
         if (! Auth::check()) Auth::login($user);
+        // Rotate the session after authentication, then write the MFA marker to the new session.
         $request->session()->forget('pending_mfa_user_id');
-        $request->session()->put('mfa_verified', true);
         $request->session()->regenerate();
-        return redirect()->route('dashboard')->with('status', 'Multi-factor authentication enabled.');
+        $request->session()->put('mfa_verified', true);
+        return redirect()->route('platform.dashboard')->with('status', 'Multi-factor authentication enabled.');
     }
 
     public function logout(Request $request): RedirectResponse
