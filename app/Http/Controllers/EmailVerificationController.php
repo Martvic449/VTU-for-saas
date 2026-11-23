@@ -1,9 +1,9 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\User;
-use Illuminate\\Http\\RedirectResponse;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 
 final class EmailVerificationController
 {
