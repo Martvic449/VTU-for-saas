@@ -31,6 +31,7 @@
         <span class="pill {{ $application->status }}">{{ ucfirst($application->status) }}</span>
       </div>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin:20px 0">
+        <div><div class="stat-label">Owner email</div><strong>{{ auth()->user()->hasVerifiedEmail() ? 'Verified' : 'Verification required' }}</strong></div>
         <div><div class="stat-label">Application approval</div><strong>{{ ucfirst($application->status) }}</strong></div>
         <div><div class="stat-label">Domain verification</div><strong>{{ $application->verified_at ? 'Verified' : 'Pending' }}</strong></div>
         <div><div class="stat-label">TLS / HTTPS</div><strong>{{ ucfirst(str_replace('_',' ', $application->tls_status ?? 'pending')) }}</strong></div>
@@ -40,9 +41,22 @@
         <a class="btn" href="https://{{ $application->hostname }}/tenant/dashboard">Open business dashboard</a>
       @else
         <div class="alert" style="background:#fff4dc;color:#805400">
-          Your reseller workspace is not active yet. Platform approval, domain verification and HTTPS activation must all be completed before business tools become available.
+          @if($application->status !== 'active')
+            Your application is awaiting platform approval. Business tools remain locked until approval, domain verification and HTTPS activation are complete.
+          @elseif(!$application->verified_at)
+            Your application is approved. The business domain {{ $application->hostname ?: 'has not been assigned' }} still needs DNS ownership verification.
+          @elseif($application->tls_status !== 'active')
+            Your application and domain are verified. HTTPS activation for {{ $application->hostname }} is still pending.
+          @else
+            Your business workspace is being prepared.
+          @endif
         </div>
-        <p class="muted" style="font-size:13px;margin-bottom:0">You can sign in and check this page while your application is being reviewed. You will not be able to make reseller purchases or use the business API until activation is complete.</p>
+        @if(!auth()->user()->hasVerifiedEmail())
+          <form method="post" action="{{ route('verification.send') }}">@csrf<button class="btn" type="submit">Resend verification email</button></form>
+        @endif
+        @if($application->hostname)
+          <p class="muted" style="font-size:13px;margin-bottom:0">Assigned business address: <strong>{{ $application->hostname }}</strong>. The DNS record and a valid HTTPS certificate must be configured before this workspace can open.</p>
+        @endif
       @endif
     </div>
   @endforeach
