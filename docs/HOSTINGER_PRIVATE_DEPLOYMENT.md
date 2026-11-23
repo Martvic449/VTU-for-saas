@@ -91,6 +91,21 @@ PAYMENT_GATEWAYS_ENABLED=
 - Configure a real SMTP mailer before relying on email verification or password reset. The example MAIL_MAILER=log is not a production mail service.
 - Do not add live supplier or payment credentials yet.
 
+## 3A. Wildcard reseller subdomains and HTTPS
+
+The platform assigns reseller addresses such as `slug.net.kokaacademyltd.com`. These are platform-owned subdomains, not customer-owned custom domains. Configure the DNS zone for `net.kokaacademyltd.com` once in Hostinger DNS (or the authoritative DNS provider):
+
+- Add an `A` record with host/name `*` pointing to the same Hostinger server IPv4 address used by `net.kokaacademyltd.com`.
+- If the application uses a stable IPv6 address, add the matching wildcard `AAAA` record too; do not add one unless Hostinger supplies the correct IPv6 target.
+- Keep the existing root/base-domain records intact. Remove conflicting wildcard records only after confirming they are obsolete.
+- Ensure Hostinger's web server routes unknown subdomains to this same Laravel `public/` entry point. A wildcard DNS record alone does not configure virtual-host routing.
+
+Issue/install a wildcard TLS certificate for `*.net.kokaacademyltd.com` (and retain a certificate for `net.kokaacademyltd.com`). A wildcard certificate normally requires DNS-based ACME validation; use Hostinger's supported wildcard SSL workflow or a DNS-provider ACME integration. Do not assume the base-domain certificate covers subdomains.
+
+After DNS and TLS are configured, test an approved tenant hostname over HTTPS. The application treats platform-managed subdomains as verified through the platform wildcard and marks TLS active only when that hostname is reached over HTTPS (the browser/server TLS handshake must succeed first). No individual TXT ownership challenge is required for these platform-owned subdomains.
+
+**Custom domains are different:** a reseller-owned domain must have its own DNS pointing/verification and certificate provisioning before it is activated. Never treat a custom domain as covered by the platform wildcard certificate.
+
 ## 4. Composer and runtime directories
 
 Hostinger Git transfers source files; it does not install Composer dependencies or run migrations. The repository now tracks the required runtime directory placeholders. The migration workflow refuses to continue unless vendor/autoload.php, the private environment file and writable bootstrap/cache are present.
