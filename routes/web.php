@@ -44,9 +44,10 @@ Route::get('/mfa/setup', [WebAuthController::class, 'showSetup'])->name('mfa.set
 Route::post('/mfa/setup', [WebAuthController::class, 'confirmSetup'])->middleware('throttle:10,1');
 
 
+Route::get('/email/verified', fn () => view('auth.email-verified'))->name('verification.complete');
+
 Route::middleware('auth')->group(function (): void {
     Route::get('/email/verify', fn () => auth()->user()->hasVerifiedEmail() ? redirect()->route('dashboard') : view('auth.verify-email'))->name('verification.notice');
-    Route::get('/email/verified', fn () => view('auth.email-verified'))->name('verification.complete');
     Route::post('/email/verification-notification', function (Request $request) {
         if ($request->user()->hasVerifiedEmail()) return back()->with('status', 'Your email is already verified.');
         $request->user()->sendEmailVerificationNotification();
