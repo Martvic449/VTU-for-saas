@@ -82,4 +82,54 @@ final class TenantWebController
         return view('tenant.transactions', compact('tenant', 'transactions'));
     }
 
+
+    public function purchaseForm(Request $request, \App\Services\Subscriptions\SubscriptionEntitlementService $entitlements)
+    {
+        $tenant = $this->ownerTenant($request);
+        abort_unless($entitlements->allows((int) $tenant->id, 'vtu_enabled'), 402, 'Your reseller subscription does not currently include service purchasing.');
+        $services = DB::table('service_catalogue')->where('status', 'active')->orderBy('category')->orderBy('name')->get();
+        $visible = collect();
+        foreach ($services as $service) {
+            $mapping = DB::table('provider_services')->join('providers', 'providers.id', '=', 'provider_services.provider_id')
+                ->where('provider_services.service_catalogue_id', $service->id)->where('provider_services.status', 'active')
+                ->where('providers.status', 'active')->where('providers.environment', config('providers.environment', 'sandbox'))
+                ->orderBy('provider_services.priority')->orderBy('provider_services.id')->select('provider_services.id')->first();
+            if (!$mapping) continue;
+            $prices = DB::table('pricing_rules')->where('service_catalogue_id', $service->id)->where('status', 'active')
+                ->where(function ($query) use ($mapping) { $query->where('provider_service_id', $mapping->id)->orWhereNull('provider_service_id'); })
+                ->where('effective_from', '<=', now())->where(function ($query) { $query->whereNull('effective_until')->orWhere('effective_until', '>', now()); });
+            $price = (clone $prices)->where('tenant_id', $tenant->id)->orderByRaw('CASE WHEN provider_service_id IS NULL THEN 1 ELSE 0 END')->orderByDesc('effective_from')->first()
+                ?: (clone $prices)->whereNull('tenant_id')->orderByRaw('CASE WHEN provider_service_id IS NULL THEN 1 ELSE 0 END')->orderByDesc('effective_from')->first();
+            if (!$price) continue;
+            $service->sell_minor = (int) $price->sell_minor;
+            $service->validation_schema = json_decode($service->validation_schema ?: '{}', true) ?: [];
+            $service->idempotency_key = (string) Str::uuid();
+            $visible->push($service);
+        }
+        return view('tenant.purchase', compact('tenant', 'visible'));
+    }
+
+    public function purchase(Request $request, \App\Services\Subscriptions\SubscriptionEntitlementService $entitlements, VtuTransactionService $transactions): \Illuminate\Http\RedirectResponse
+    {
+        $tenant = $this->ownerTenant($request);
+        abort_unless($entitlements->allows((int) $tenant->id, 'vtu_enabled'), 402, 'Your reseller subscription does not currently include service purchasing.');
+        $data = $request->validate([
+            'service_code' => ['required', 'string', 'max:64', 'exists:service_catalogue,service_code'],
+            'idempotency_key' => ['required', 'string', 'min:16', 'max:120'],
+            'customer' => ['required', 'array'],
+        ]);
+        $wallet = DB::table('wallets')->where('owner_type', 'tenant')->where('owner_id', $tenant->id)->where('currency', 'NGN')->where('status', 'active')->first();
+        abort_unless($wallet, 409, 'Your reseller wallet is not available.');
+        $service = DB::table('service_catalogue')->where('service_code', $data['service_code'])->firstOrFail();
+        try {
+            $tx = $transactions->reserve((int) $wallet->id, (int) $service->id, $data['idempotency_key'], $data['customer'], (int) $tenant->id);
+        } catch (RuntimeException $exception) {
+            return back()->withErrors(['purchase' => $exception->getMessage()])->withInput();
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            throw $exception;
+        }
+        if (($tx['status'] ?? null) === 'reserved') SubmitVtuTransaction::dispatch((int) $tx['id'])->afterCommit();
+        return redirect()->route('tenant.transactions')->with('status', 'Purchase accepted. Reference: '.$tx['reference'].'. Track the final status in transaction history.');
+    }
+
 }
