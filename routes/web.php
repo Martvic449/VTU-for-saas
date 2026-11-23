@@ -46,6 +46,7 @@ Route::post('/mfa/setup', [WebAuthController::class, 'confirmSetup'])->middlewar
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/email/verify', fn () => auth()->user()->hasVerifiedEmail() ? redirect()->route('dashboard') : view('auth.verify-email'))->name('verification.notice');
+    Route::get('/email/verified', fn () => view('auth.email-verified'))->name('verification.complete');
     Route::post('/email/verification-notification', function (Request $request) {
         if ($request->user()->hasVerifiedEmail()) return back()->with('status', 'Your email is already verified.');
         $request->user()->sendEmailVerificationNotification();
@@ -67,6 +68,7 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->middleware('auth')
 
 Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(function (): void {
     Route::get('/dashboard', CustomerDashboardController::class)->name('dashboard');
+    Route::get('/reseller/dashboard', [\\App\\Http\\Controllers\\ResellerDashboardController::class, '__invoke'])->name('reseller.dashboard');
     Route::get('/account/activity', [CustomerDashboardController::class, 'activity'])->name('customer.activity');
     Route::get('/customer/dashboard', [TenantCustomerController::class, 'dashboard'])->name('tenant.customer.dashboard');
     Route::post('/customer/join', [TenantCustomerController::class, 'join'])->middleware('throttle:5,1')->name('tenant.customer.join');
