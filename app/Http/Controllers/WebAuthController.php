@@ -64,6 +64,11 @@ final class WebAuthController
         Auth::login($user);
         $request->session()->regenerate();
         $tenant = $request->attributes->get('tenant');
+        if ($user->hasRole('tenant-owner')) {
+            return $tenant
+                ? redirect()->route('tenant.dashboard')
+                : redirect()->route('reseller.dashboard');
+        }
         if ($tenant) {
             if (\Illuminate\Support\Facades\DB::table('tenant_customers')->where('tenant_id', $tenant->id)->where('user_id', $user->id)->where('status', 'active')->exists()) return redirect()->route('tenant.customer.dashboard');
             return redirect()->route('home');

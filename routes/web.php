@@ -16,7 +16,6 @@ use App\Http\Controllers\TenantCustomerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\HelpCentreController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 
 Route::get('/', StorefrontController::class)->name('home');
@@ -44,27 +43,21 @@ Route::get('/mfa/setup', [WebAuthController::class, 'showSetup'])->name('mfa.set
 Route::post('/mfa/setup', [WebAuthController::class, 'confirmSetup'])->middleware('throttle:10,1');
 
 
+Route::get('/email/verified', fn () => view('auth.email-verified'))->name('verification.complete');
+
 Route::middleware('auth')->group(function (): void {
     Route::get('/email/verify', fn () => auth()->user()->hasVerifiedEmail() ? redirect()->route('dashboard') : view('auth.verify-email'))->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-        $request->fulfill();
-        $tenant = $request->attributes->get('tenant');
-        if ($tenant && \Illuminate\Support\Facades\DB::table('tenant_customers')->where('tenant_id', $tenant->id)->where('user_id', $request->user()->id)->where('status', 'active')->exists()) return redirect()->route('tenant.customer.dashboard')->with('status', 'Email address verified successfully.');
-        if (! $tenant) {
-            $customerDomain = \Illuminate\Support\Facades\DB::table('tenant_customers')->join('tenants','tenants.id','=','tenant_customers.tenant_id')
-                ->join('tenant_domains','tenant_domains.tenant_id','=','tenants.id')->where('tenant_customers.user_id',$request->user()->id)
-                ->where('tenant_customers.status','active')->where('tenants.status','active')->whereNotNull('tenant_domains.verified_at')
-                ->orderByDesc('tenant_customers.created_at')->select('tenant_domains.hostname')->first();
-            if ($customerDomain) return redirect()->away('https://'.$customerDomain->hostname.'/customer/dashboard');
-        }
-        return redirect()->route('dashboard')->with('status', 'Email address verified successfully.');
-    })->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::post('/email/verification-notification', function (Request $request) {
         if ($request->user()->hasVerifiedEmail()) return back()->with('status', 'Your email is already verified.');
         $request->user()->sendEmailVerificationNotification();
         return back()->with('status', 'A fresh verification link has been sent.');
     })->middleware('throttle:6,1')->name('verification.send');
 });
+
+// Signed verification links must work when opened by a mail app in a fresh browser session.
+Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
 
 Route::middleware(['auth', 'active.user', 'privileged.mfa'])->group(function (): void {
     Route::get('/account/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -75,6 +68,7 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->middleware('auth')
 
 Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(function (): void {
     Route::get('/dashboard', CustomerDashboardController::class)->name('dashboard');
+    Route::get('/reseller/dashboard', [\App\Http\Controllers\ResellerDashboardController::class, '__invoke'])->name('reseller.dashboard');
     Route::get('/account/activity', [CustomerDashboardController::class, 'activity'])->name('customer.activity');
     Route::get('/customer/dashboard', [TenantCustomerController::class, 'dashboard'])->name('tenant.customer.dashboard');
     Route::post('/customer/join', [TenantCustomerController::class, 'join'])->middleware('throttle:5,1')->name('tenant.customer.join');
