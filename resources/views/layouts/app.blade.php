@@ -126,7 +126,10 @@
         @if($user->hasAnyRole(['super-admin','kyc-reviewer']))<a href="{{ route('platform.kyc') }}"><i class="side-dot"></i>KYC reviews</a>@endif
         @if($user->hasAnyRole(['super-admin','operations-admin']))<a href="{{ route('platform.support') }}"><i class="side-dot"></i>Support tickets</a>@if($user->hasRole('super-admin'))<a href="{{ route('platform.content') }}"><i class="side-dot"></i>Help & announcements</a>@endif<a href="{{ route('platform.subscriptions') }}"><i class="side-dot"></i>Plans & subscriptions</a><a href="{{ route('platform.api-activity') }}"><i class="side-dot"></i>API activity</a><a href="{{ route('platform.security') }}"><i class="side-dot"></i>Audit & risk</a>@endif
       @elseif($user->hasRole('tenant-owner') && request()->attributes->get('tenant'))
-        <a href="{{ route('tenant.dashboard') }}"><i class="side-dot"></i>Business dashboard</a>
+        <a href="{{ route('tenant.dashboard') }}"><i class="side-dot"></i>Business overview</a>
+        <a href="{{ route('tenant.dashboard') }}#tenant-fund-wallet"><i class="side-dot"></i>Fund wallet</a>
+        <a href="{{ route('tenant.dashboard') }}#tenant-deposits"><i class="side-dot"></i>Deposits</a>
+        <a href="{{ route('tenant.dashboard') }}#tenant-transactions"><i class="side-dot"></i>Transactions</a>
         <a href="{{ route('tenant.developers') }}"><i class="side-dot"></i>Developer API</a>
         <a href="{{ route('reseller.dashboard') }}"><i class="side-dot"></i>Application & account</a>
       @elseif($user->hasRole('tenant-owner'))
