@@ -133,7 +133,11 @@
         <a href="{{ route('tenant.developers') }}"><i class="side-dot"></i>Developer API</a>
         <a href="{{ route('reseller.dashboard') }}"><i class="side-dot"></i>Application & account</a>
       @elseif($user->hasRole('tenant-owner'))
-        <a href="{{ route('reseller.dashboard') }}"><i class="side-dot"></i>Reseller overview</a>
+        @if(!$user->hasVerifiedEmail())
+          <a href="{{ route('verification.notice') }}"><i class="side-dot"></i>Verify email</a>
+        @else
+          <a href="{{ route('reseller.dashboard') }}"><i class="side-dot"></i>Reseller overview</a>
+        @endif
       @else
         <a href="{{ route('dashboard') }}"><i class="side-dot"></i>My dashboard</a><a href="{{ route('dashboard') }}#wallet-funding"><i class="side-dot"></i>Fund wallet</a><a href="{{ route('dashboard') }}#digital-services"><i class="side-dot"></i>Buy digital services</a><a href="{{ route('customer.activity') }}"><i class="side-dot"></i>Transaction history</a><a href="{{ route('support.index') }}"><i class="side-dot"></i>Help Centre</a>
       @endif
