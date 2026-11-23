@@ -1,0 +1,9 @@
+@extends('layouts.app')
+@section('title', $tenant->name.' · Transactions')
+@section('content')
+<div class="section-head"><span class="section-kicker">Wallet activity</span><h1 class="title">Transactions</h1><p class="section-intro">Search and review purchases processed by your reseller business.</p></div>
+<div class="card" style="margin-bottom:18px"><form method="get" class="row"><div class="field" style="flex:2;min-width:180px;margin:0"><label>Reference</label><input name="reference" value="{{ request('reference') }}" placeholder="Transaction reference"></div><div class="field" style="flex:1;min-width:150px;margin:0"><label>Status</label><select name="status"><option value="">All statuses</option>@foreach(['reserved','submitted','pending','successful','failed','reversed'] as $status)<option value="{{ $status }}" @selected(request('status')===$status)>{{ ucfirst($status) }}</option>@endforeach</select></div><button class="btn" type="submit">Filter</button><a class="btn secondary" href="{{ route('tenant.transactions') }}">Reset</a></form></div>
+<div class="table-wrap"><table><thead><tr><th>Reference</th><th>Service</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead><tbody>
+@forelse($transactions as $tx)<tr><td><strong>{{ $tx->reference }}</strong></td><td>#{{ $tx->service_catalogue_id }}</td><td>₦{{ number_format($tx->sell_minor / 100, 2) }}</td><td><span class="pill {{ $tx->status }}">{{ ucfirst($tx->status) }}</span></td><td>{{ \Illuminate\Support\Carbon::parse($tx->created_at)->format('d M Y H:i') }}</td></tr>@empty<tr><td colspan="5">No transactions match your search.</td></tr>@endforelse
+</tbody></table></div><div style="margin-top:18px">{{ $transactions->links() }}</div>
+@endsection
