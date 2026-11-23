@@ -63,12 +63,12 @@
 @endif
 
 <div class="card">
-  <h3 style="margin-top:0">What happens next?</h3>
+  <h3 style="margin-top:0">Onboarding checklist</h3>
   <ol style="padding-left:20px;color:var(--muted);line-height:1.9">
-    <li>Verify your business email address.</li>
-    <li>The platform team reviews and approves your reseller application.</li>
-    <li>Your business subdomain is verified and HTTPS is activated.</li>
-    <li>Your reseller dashboard and enabled business tools become available.</li>
+    <li>{{ auth()->user()->hasVerifiedEmail() ? '✓ Owner email verified' : 'Verify the owner email address' }}</li>
+    <li>{{ $applications->contains(fn ($item) => $item->status === 'active') ? '✓ Reseller application approved' : 'Awaiting platform approval' }}</li>
+    <li>{{ $applications->contains(fn ($item) => (bool) $item->verified_at) ? '✓ Business domain verified' : 'Awaiting DNS ownership verification' }}</li>
+    <li>{{ $applications->contains(fn ($item) => $item->tls_status === 'active') ? '✓ HTTPS certificate active' : 'Awaiting valid HTTPS activation' }}</li>
   </ol>
   <a href="{{ route('support.contact') }}" style="color:var(--green-dark);font-weight:700">Need help? Contact support</a>
 </div>
