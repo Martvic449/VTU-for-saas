@@ -107,6 +107,7 @@ final class TenantWebController
             if (!$price) continue;
             $service->sell_minor = (int) $price->sell_minor;
             $service->validation_schema = json_decode($service->validation_schema ?: '{}', true) ?: [];
+            if (!$service->validation_schema) continue;
             $service->idempotency_key = (string) Str::uuid();
             $visible->push($service);
         }
