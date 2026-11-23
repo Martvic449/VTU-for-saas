@@ -12,7 +12,7 @@
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin:10px 0">
    @foreach($service->validation_schema as $field => $rules)
     @php($ruleText=is_array($rules)?implode('|',$rules):(string)$rules)
-    <div class="field" style="margin:0"><label for="service-{{ $service->id }}-{{ $field }}">{{ ucwords(str_replace(['_','-'],' ',$field)) }}</label><input id="service-{{ $service->id }}-{{ $field }}" name="customer[{{ $field }}]" value="{{ old('customer.'.$field) }}" required="{{ str_contains($ruleText,'required') ? 'required' : 'false' }}" placeholder="Enter {{ strtolower(str_replace('_',' ',$field)) }}"></div>
+    <div class="field" style="margin:0"><label for="service-{{ $service->id }}-{{ $field }}">{{ ucwords(str_replace(['_','-'],' ',$field)) }}</label><input id="service-{{ $service->id }}-{{ $field }}" name="customer[{{ $field }}]" value="{{ old('customer.'.$field) }}" @if(str_contains($ruleText,'required')) required @endif placeholder="Enter {{ strtolower(str_replace('_',' ',$field)) }}"></div>
    @endforeach
   </div>
   <button class="btn" type="submit" onclick="return confirm('Submit this purchase using your reseller wallet?')">Submit purchase</button>
