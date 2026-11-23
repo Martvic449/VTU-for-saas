@@ -46,7 +46,7 @@ Route::post('/mfa/setup', [WebAuthController::class, 'confirmSetup'])->middlewar
 Route::get('/email/verified', fn () => view('auth.email-verified'))->name('verification.complete');
 
 Route::middleware('auth')->group(function (): void {
-    Route::get('/email/verify', fn () => auth()->user()->hasVerifiedEmail() ? redirect()->route('dashboard') : view('auth.verify-email'))->name('verification.notice');
+    Route::get('/email/verify', fn () => auth()->user()->hasVerifiedEmail() ? redirect()->route(auth()->user()->hasRole('tenant-owner') ? 'reseller.dashboard' : 'dashboard') : view('auth.verify-email'))->name('verification.notice');
     Route::post('/email/verification-notification', function (Request $request) {
         if ($request->user()->hasVerifiedEmail()) return back()->with('status', 'Your email is already verified.');
         $request->user()->sendEmailVerificationNotification();
@@ -122,6 +122,9 @@ Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(
     Route::post('/platform/tenants', [PlatformWebController::class, 'createTenant'])->name('platform.tenants.create');
     Route::patch('/platform/tenants/{tenant}/status', [PlatformWebController::class, 'updateTenantStatus'])->name('platform.tenants.status');
     Route::get('/tenant/dashboard', TenantWebController::class)->middleware('tenant.membership')->name('tenant.dashboard');
+    Route::get('/tenant/customers', [TenantWebController::class, 'customers'])->middleware('tenant.membership')->name('tenant.customers');
+    Route::get('/tenant/services', [TenantWebController::class, 'services'])->middleware('tenant.membership')->name('tenant.services');
+    Route::get('/tenant/pricing', [TenantWebController::class, 'pricing'])->middleware('tenant.membership')->name('tenant.pricing');
     Route::get('/tenant/developers', [TenantDeveloperPortalController::class, 'index'])->middleware('tenant.membership')->name('tenant.developers');
     Route::post('/tenant/developers/clients', [TenantDeveloperPortalController::class, 'createClient'])->middleware('tenant.membership')->name('tenant.developers.clients');
     Route::post('/tenant/developers/clients/{client}/keys', [TenantDeveloperPortalController::class, 'createKey'])->middleware('tenant.membership')->name('tenant.developers.keys');
