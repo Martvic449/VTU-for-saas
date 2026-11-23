@@ -1,10 +1,10 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Services\\Accounting\\WalletBalanceService;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\DB;
+use App\Services\Accounting\WalletBalanceService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 final class TenantWebController
 {
@@ -16,14 +16,14 @@ final class TenantWebController
         return $tenant;
     }
 
-    public function __invoke(Request $request, WalletBalanceService $balances, \\App\\Services\\Subscriptions\\SubscriptionEntitlementService $entitlements)
+    public function __invoke(Request $request, WalletBalanceService $balances, \App\Services\Subscriptions\SubscriptionEntitlementService $entitlements)
     {
         $tenant = $this->ownerTenant($request);
         $wallet = DB::table('wallets')->where('owner_type', 'tenant')->where('owner_id', $tenant->id)->where('currency', 'NGN')->first();
         $balance = $wallet ? $balances->availableMinor((int) $wallet->id) : 0;
         $transactions = $wallet ? DB::table('transactions')->where('tenant_id', $tenant->id)->latest()->limit(10)->get() : collect();
         $deposits = $wallet ? DB::table('deposits')->where('wallet_id', $wallet->id)->latest()->limit(10)->get() : collect();
-        $paymentGateways = $tenant->status === 'active' && $entitlements->allows((int) $tenant->id, 'vtu_enabled') ? app(\\App\\Services\\Payments\\PaymentGatewayRegistry::class)->enabled() : [];
+        $paymentGateways = $tenant->status === 'active' && $entitlements->allows((int) $tenant->id, 'vtu_enabled') ? app(\App\Services\Payments\PaymentGatewayRegistry::class)->enabled() : [];
         $customerCount = DB::table('tenant_customers')->where('tenant_id', $tenant->id)->where('status', 'active')->count();
         $pendingTransactions = DB::table('transactions')->where('tenant_id', $tenant->id)->whereIn('status', ['reserved', 'submitted', 'pending'])->count();
         return view('tenant.dashboard', compact('tenant', 'wallet', 'balance', 'transactions', 'deposits', 'paymentGateways', 'customerCount', 'pendingTransactions'));
