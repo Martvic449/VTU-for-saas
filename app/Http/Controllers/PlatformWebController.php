@@ -78,7 +78,7 @@ final class PlatformWebController
                 $tenant->users()->syncWithoutDetaching([$owner->id => ['role' => 'tenant-owner', 'status' => 'active']]);
             }
             $base = strtolower((string) config('tenancy.base_domain'));
-            if ($base && $base !== 'localhost') TenantDomain::create(['tenant_id' => $tenant->id, 'hostname' => $tenant->slug.'.'.$base, 'is_primary' => true, 'tls_status' => 'pending']);
+            if ($base && $base !== 'localhost') TenantDomain::create(['tenant_id' => $tenant->id, 'hostname' => $tenant->slug.'.'.$base, 'is_primary' => true, 'verified_at' => now(), 'tls_status' => 'pending']);
             $audit->record('tenant.created', (int) $tenant->id, Tenant::class, (string) $tenant->id, 'Created in platform admin dashboard', ['slug' => $tenant->slug]);
         }, 3);
         return redirect()->route('platform.tenants')->with('status', 'Tenant created in pending status.');
@@ -98,7 +98,8 @@ final class PlatformWebController
     {
         abort_unless($request->user()->hasRole('super-admin'), 403);
         $record = TenantDomain::with('tenant')->findOrFail($domain);
-        abort_unless($record->is_primary && $record->tenant->status === 'active', 409, 'Approve the tenant before issuing its DNS challenge.');
+        abort_unless($record->is_primary && $record->tenant->status === 'active', 409, 'Approve the tenant first.');
+        abort_if(str_ends_with(strtolower($record->hostname), '.'.strtolower((string) config('tenancy.base_domain'))), 409, 'Platform-managed subdomains use wildcard DNS and do not require individual TXT challenges.');
         $challenge = $verification->issue($record);
         return redirect()->route('platform.tenants')->with('domain_challenge', [
             'hostname' => $record->hostname,
@@ -114,7 +115,8 @@ final class PlatformWebController
         abort_unless($request->user()->hasRole('super-admin'), 403);
         $data = $request->validate(['reason' => ['required', 'string', 'min:8', 'max:500']]);
         $record = TenantDomain::with('tenant')->findOrFail($domain);
-        abort_unless($record->is_primary && $record->tenant->status === 'active', 409, 'Only approved platform-owned tenant domains can be verified here.');
+        abort_unless($record->is_primary && $record->tenant->status === 'active', 409, 'Only approved tenant domains can be verified here.');
+        abort_if(str_ends_with(strtolower($record->hostname), '.'.strtolower((string) config('tenancy.base_domain'))), 409, 'Platform-managed subdomains are verified by the wildcard DNS configuration; no TXT challenge is required.');
         try {
             $verification->verify($record);
         } catch (RuntimeException $exception) {
