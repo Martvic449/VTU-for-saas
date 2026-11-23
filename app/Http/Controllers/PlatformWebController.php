@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Services\AuditLogger;
+use App\Services\TenantDomainVerificationService;
+use Illuminate\Support\Facades\Http;
+use RuntimeException;
 
 final class PlatformWebController
 {
@@ -90,4 +93,51 @@ final class PlatformWebController
         $audit->record('tenant.status_changed', (int) $record->id, Tenant::class, (string) $record->id, $data['reason'], ['before' => $before, 'after' => $record->status]);
         return redirect()->route('platform.tenants')->with('status', 'Tenant status updated.');
     }
+
+    public function issueTenantDomainChallenge(Request $request, int $domain, TenantDomainVerificationService $verification): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        $record = TenantDomain::with('tenant')->findOrFail($domain);
+        abort_unless($record->is_primary && $record->tenant->status === 'active', 409, 'Approve the tenant before issuing its DNS challenge.');
+        $challenge = $verification->issue($record);
+        return redirect()->route('platform.tenants')->with('domain_challenge', [
+            'hostname' => $record->hostname,
+            'record_type' => $challenge['record_type'],
+            'record_name' => $challenge['record_name'],
+            'record_value' => $challenge['record_value'],
+            'expires_at' => $challenge['expires_at']->toDateTimeString(),
+        ])->with('status', 'DNS verification challenge generated. Add the TXT record, wait for DNS propagation, then verify it here.');
+    }
+
+    public function verifyTenantDomain(Request $request, int $domain, TenantDomainVerificationService $verification, AuditLogger $audit): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        $data = $request->validate(['reason' => ['required', 'string', 'min:8', 'max:500']]);
+        $record = TenantDomain::with('tenant')->findOrFail($domain);
+        abort_unless($record->is_primary && $record->tenant->status === 'active', 409, 'Only approved platform-owned tenant domains can be verified here.');
+        try {
+            $verification->verify($record);
+        } catch (RuntimeException $exception) {
+            return back()->withErrors(['domain' => $exception->getMessage()]);
+        }
+        $audit->record('tenant_domain.platform_verified', (int) $record->tenant_id, TenantDomain::class, (string) $record->id, $data['reason'], ['hostname' => $record->hostname]);
+        return redirect()->route('platform.tenants')->with('status', 'DNS TXT ownership verified for '.$record->hostname.'. HTTPS must still be checked and activated.');
+    }
+
+    public function activateTenantTls(Request $request, int $domain, AuditLogger $audit): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        $data = $request->validate(['reason' => ['required', 'string', 'min:8', 'max:500']]);
+        $record = TenantDomain::with('tenant')->findOrFail($domain);
+        abort_unless($record->verified_at && $record->tenant->status === 'active', 409, 'Tenant approval and DNS verification are required before HTTPS activation.');
+        try {
+            $response = Http::timeout(10)->get('https://'.$record->hostname);
+        } catch (\Throwable $exception) {
+            return back()->withErrors(['domain' => 'HTTPS could not be verified. Confirm DNS and install a valid SSL certificate before retrying.']);
+        }
+        $record->update(['tls_status' => 'active']);
+        $audit->record('tenant_domain.tls_activated', (int) $record->tenant_id, TenantDomain::class, (string) $record->id, $data['reason'], ['hostname' => $record->hostname, 'http_status' => $response->status()]);
+        return redirect()->route('platform.tenants')->with('status', 'HTTPS connectivity and certificate verified for '.$record->hostname.'.');
+    }
+
 }
