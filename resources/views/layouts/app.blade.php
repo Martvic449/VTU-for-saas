@@ -113,9 +113,10 @@
 <body><div class="shell">
 @if(auth()->check())
 @php($user=auth()->user())
+@php($workspaceHome = $user->hasRole('tenant-owner') ? (request()->attributes->get('tenant') ? route('tenant.dashboard') : route('reseller.dashboard')) : ($user->hasAnyRole(['super-admin','operations-admin','finance-admin','kyc-reviewer']) ? route('platform.dashboard') : route('dashboard')))
 <div class="app-shell">
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeAppSidebar()" aria-hidden="true"></div>
-  <aside class="sidebar" id="appSidebar" aria-label="Main navigation"><div class="sidebar-heading"><a class="brand" href="{{ route('dashboard') }}"><span class="brand-mark">V</span>{{ config('app.name', 'VTU SaaS') }}</a><button class="sidebar-close" type="button" onclick="closeAppSidebar()" aria-label="Close navigation"><span aria-hidden="true">×</span></button></div>
+  <aside class="sidebar" id="appSidebar" aria-label="Main navigation"><div class="sidebar-heading"><a class="brand" href="{{ $workspaceHome }}"><span class="brand-mark">V</span>{{ config('app.name', 'VTU SaaS') }}</a><button class="sidebar-close" type="button" onclick="closeAppSidebar()" aria-label="Close navigation"><span aria-hidden="true">×</span></button></div>
     <div class="nav-label">Workspace</div><nav class="side-nav">
       @if($user->hasAnyRole(['super-admin','operations-admin','finance-admin','kyc-reviewer']))
         <a href="{{ route('platform.dashboard') }}"><i class="side-dot"></i>Overview</a>
