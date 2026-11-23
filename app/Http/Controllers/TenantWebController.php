@@ -70,4 +70,16 @@ final class TenantWebController
             ->orderBy('service_catalogue.category')->orderBy('service_catalogue.name')->paginate(30);
         return view('tenant.pricing', compact('tenant', 'pricing'));
     }
+
+    public function transactions(Request $request)
+    {
+        $tenant = $this->ownerTenant($request);
+        $transactions = DB::table('transactions')
+            ->where('tenant_id', $tenant->id)
+            ->when($request->filled('reference'), fn ($query) => $query->where('reference', 'like', '%'.trim((string) $request->query('reference')).'%'))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', (string) $request->query('status')))
+            ->orderByDesc('created_at')->paginate(30)->withQueryString();
+        return view('tenant.transactions', compact('tenant', 'transactions'));
+    }
+
 }
