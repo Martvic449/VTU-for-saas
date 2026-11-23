@@ -1,0 +1,7 @@
+@extends('layouts.app')
+@section('title', $tenant->name.' · Customers')
+@section('content')
+<div class="section-head"><span class="section-kicker">Business management</span><h1 class="title">Customers</h1><p class="section-intro">View customers registered with your reseller business. Customer records are isolated to your tenant.</p></div>
+<div class="card" style="margin-bottom:18px"><form method="get" class="row"><div class="field" style="flex:1;min-width:220px;margin:0"><label for="customer-search">Search customers</label><input id="customer-search" name="q" value="{{ request('q') }}" placeholder="Name or email address"></div><button class="btn" type="submit">Search</button>@if(request('q'))<a class="btn secondary" href="{{ route('tenant.customers') }}">Clear</a>@endif</form></div>
+<div class="table-wrap"><table><thead><tr><th>Customer</th><th>Email</th><th>Status</th><th>Joined</th></tr></thead><tbody>@forelse($customers as $customer)<tr><td><strong>{{ $customer->name }}</strong></td><td>{{ $customer->email }}</td><td><span class="pill {{ $customer->status }}">{{ ucfirst($customer->status) }}</span></td><td>{{ \Illuminate\Support\Carbon::parse($customer->created_at)->format('d M Y') }}</td></tr>@empty<tr><td colspan="4">No customers found for this business.</td></tr>@endforelse</tbody></table></div><div style="margin-top:18px">{{ $customers->links() }}</div>
+@endsection
