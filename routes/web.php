@@ -16,7 +16,6 @@ use App\Http\Controllers\TenantCustomerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\HelpCentreController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 
 Route::get('/', StorefrontController::class)->name('home');
