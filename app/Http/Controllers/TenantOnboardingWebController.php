@@ -34,12 +34,12 @@ final class TenantOnboardingWebController
             $wallets->create('tenant', (int) $tenant->id, (int) $tenant->id);
             $wallets->create('user', (int) $user->id);
             $base = strtolower((string) config('tenancy.base_domain'));
-            if ($base && $base !== 'localhost') TenantDomain::create(['tenant_id' => $tenant->id, 'hostname' => $tenant->slug.'.'.$base, 'is_primary' => true, 'tls_status' => 'pending']);
+            if ($base && $base !== 'localhost') TenantDomain::create(['tenant_id' => $tenant->id, 'hostname' => $tenant->slug.'.'.$base, 'is_primary' => true, 'verified_at' => now(), 'tls_status' => 'pending']);
             return $user;
         }, 3);
         Auth::login($owner);
         $request->session()->regenerate();
         $owner->sendEmailVerificationNotification();
-        return redirect()->route('verification.notice')->with('status', 'Your reseller application has been submitted for review. Verify your email; platform access will be enabled after tenant approval and domain activation.');
+        return redirect()->route('verification.notice')->with('status', 'Your reseller application has been submitted for review. Verify your email; platform access will be enabled after tenant approval and automatic subdomain and HTTPS activation.');
     }
 }
