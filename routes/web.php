@@ -127,6 +127,8 @@ Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(
     Route::get('/tenant/dashboard', TenantWebController::class)->middleware('tenant.membership')->name('tenant.dashboard');
     Route::get('/tenant/customers', [TenantWebController::class, 'customers'])->middleware('tenant.membership')->name('tenant.customers');
     Route::get('/tenant/services', [TenantWebController::class, 'services'])->middleware('tenant.membership')->name('tenant.services');
+    Route::get('/tenant/purchase', [TenantWebController::class, 'purchaseForm'])->middleware('tenant.membership')->name('tenant.purchase');
+    Route::post('/tenant/purchase', [TenantWebController::class, 'purchase'])->middleware(['tenant.membership', 'throttle:10,1'])->name('tenant.purchase.store');
     Route::get('/tenant/pricing', [TenantWebController::class, 'pricing'])->middleware('tenant.membership')->name('tenant.pricing');
     Route::get('/tenant/transactions', [TenantWebController::class, 'transactions'])->middleware('tenant.membership')->name('tenant.transactions');
     Route::get('/tenant/developers', [TenantDeveloperPortalController::class, 'index'])->middleware('tenant.membership')->name('tenant.developers');
