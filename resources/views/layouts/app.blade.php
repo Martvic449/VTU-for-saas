@@ -133,7 +133,7 @@
         <a href="{{ route('tenant.pricing') }}"><i class="side-dot"></i>Pricing & margins</a>
         <a href="{{ route('tenant.dashboard') }}#tenant-fund-wallet"><i class="side-dot"></i>Wallet & funding</a>
         <a href="{{ route('tenant.dashboard') }}#tenant-deposits"><i class="side-dot"></i>Deposits</a>
-        <a href="{{ route('tenant.dashboard') }}#tenant-transactions"><i class="side-dot"></i>Transactions</a>
+        <a href="{{ route('tenant.transactions') }}"><i class="side-dot"></i>Transactions</a>
         <a href="{{ route('tenant.developers') }}"><i class="side-dot"></i>API clients & keys</a>
         <a href="{{ route('tenant.developers') }}#webhooks"><i class="side-dot"></i>Webhooks</a>
         <a href="{{ route('tenant.developers') }}#api-activity"><i class="side-dot"></i>API activity</a>
