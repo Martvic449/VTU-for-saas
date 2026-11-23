@@ -130,6 +130,7 @@
         <a href="{{ route('tenant.dashboard') }}"><i class="side-dot"></i>Overview</a>
         <a href="{{ route('tenant.customers') }}"><i class="side-dot"></i>Customers</a>
         <a href="{{ route('tenant.services') }}"><i class="side-dot"></i>Service catalogue</a>
+        <a href="{{ route('tenant.purchase') }}"><i class="side-dot"></i>Buy services</a>
         <a href="{{ route('tenant.pricing') }}"><i class="side-dot"></i>Pricing & margins</a>
         <a href="{{ route('tenant.dashboard') }}#tenant-fund-wallet"><i class="side-dot"></i>Wallet & funding</a>
         <a href="{{ route('tenant.dashboard') }}#tenant-deposits"><i class="side-dot"></i>Deposits</a>
