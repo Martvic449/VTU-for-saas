@@ -137,4 +137,20 @@ final class TenantWebController
         return redirect()->route('tenant.transactions')->with('status', 'Purchase accepted. Reference: '.$tx['reference'].'. Track the final status in transaction history.');
     }
 
+
+    public function updateCustomerStatus(Request $request, int $customer, \App\Services\AuditLogger $audit): \Illuminate\Http\RedirectResponse
+    {
+        $tenant = $this->ownerTenant($request);
+        $data = $request->validate([
+            'status' => ['required', \Illuminate\Validation\Rule::in(['active', 'suspended'])],
+            'reason' => ['required', 'string', 'min:8', 'max:500'],
+        ]);
+        $record = DB::table('tenant_customers')->where('tenant_id', $tenant->id)->where('id', $customer)->first();
+        abort_unless($record, 404);
+        $before = $record->status;
+        DB::table('tenant_customers')->where('tenant_id', $tenant->id)->where('id', $customer)->update(['status' => $data['status'], 'updated_at' => now()]);
+        $audit->record('tenant_customer.status_changed', (int) $tenant->id, 'tenant_customers', (string) $customer, $data['reason'], ['before' => $before, 'after' => $data['status']]);
+        return back()->with('status', 'Customer status updated.');
+    }
+
 }
