@@ -90,6 +90,14 @@ final class PlatformWebController
         $data = $request->validate(['status' => ['required', Rule::in(['active', 'suspended', 'pending'])], 'reason' => ['required', 'string', 'min:8', 'max:500']]);
         $record = Tenant::findOrFail($tenant); $before = $record->status;
         $record->update(['status' => $data['status']]);
+        if ($data['status'] === 'active') {
+            $base = strtolower((string) config('tenancy.base_domain'));
+            if ($base !== '' && $base !== 'localhost') {
+                TenantDomain::where('tenant_id', $record->id)
+                    ->where('hostname', strtolower($record->slug).'.'.$base)
+                    ->update(['verified_at' => now(), 'updated_at' => now()]);
+            }
+        }
         $audit->record('tenant.status_changed', (int) $record->id, Tenant::class, (string) $record->id, $data['reason'], ['before' => $before, 'after' => $record->status]);
         return redirect()->route('platform.tenants')->with('status', 'Tenant status updated.');
     }
