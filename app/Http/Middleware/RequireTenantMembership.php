@@ -1,10 +1,10 @@
 <?php
 
-namespace App\\Http\\Middleware;
+namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\\Http\\Request;
-use Symfony\\Component\\HttpFoundation\\Response;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class RequireTenantMembership
 {
@@ -16,10 +16,9 @@ class RequireTenantMembership
 
         $tenant = $request->attributes->get('tenant');
 
-        // On the platform's own host, let an authenticated reseller owner
-        // reach their single approved workspace without requiring a custom
-        // DNS hostname to be live first. Tenant subdomains still resolve
-        // strictly through ResolveTenantFromHost.
+        // On the platform's own host, allow an authenticated reseller owner
+        // to reach their single approved workspace before their tenant DNS
+        // hostname has been configured. Tenant hostnames still resolve strictly.
         if (! $tenant) {
             $host = strtolower(rtrim($request->getHost(), '.'));
             $platformHosts = config('tenancy.platform_hosts', []);
@@ -34,7 +33,12 @@ class RequireTenantMembership
                 ->wherePivot('role', 'tenant-owner')
                 ->get();
 
-            abort_unless($owned->count() === 1, $owned->isEmpty() ? 404 : 409, 'Select a single approved reseller workspace or contact platform support.');
+            abort_unless(
+                $owned->count() === 1,
+                $owned->isEmpty() ? 404 : 409,
+                'Your account must have exactly one approved reseller workspace. Contact platform support.'
+            );
+
             $tenant = $owned->first();
             $request->attributes->set('tenant', $tenant);
         }
