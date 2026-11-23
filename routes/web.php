@@ -121,6 +121,9 @@ Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(
     Route::patch('/platform/integrations/{type}/{id}/status', [PlatformIntegrationsWebController::class, 'updateStatus'])->name('platform.integrations.status');
     Route::post('/platform/tenants', [PlatformWebController::class, 'createTenant'])->name('platform.tenants.create');
     Route::patch('/platform/tenants/{tenant}/status', [PlatformWebController::class, 'updateTenantStatus'])->name('platform.tenants.status');
+    Route::post('/platform/tenant-domains/{domain}/challenge', [PlatformWebController::class, 'issueTenantDomainChallenge'])->name('platform.tenant-domains.challenge');
+    Route::post('/platform/tenant-domains/{domain}/verify', [PlatformWebController::class, 'verifyTenantDomain'])->name('platform.tenant-domains.verify');
+    Route::post('/platform/tenant-domains/{domain}/activate-tls', [PlatformWebController::class, 'activateTenantTls'])->name('platform.tenant-domains.tls');
     Route::get('/tenant/dashboard', TenantWebController::class)->middleware('tenant.membership')->name('tenant.dashboard');
     Route::get('/tenant/customers', [TenantWebController::class, 'customers'])->middleware('tenant.membership')->name('tenant.customers');
     Route::get('/tenant/services', [TenantWebController::class, 'services'])->middleware('tenant.membership')->name('tenant.services');
