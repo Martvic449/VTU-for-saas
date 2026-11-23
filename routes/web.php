@@ -128,6 +128,7 @@ Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(
     Route::get('/tenant/customers', [TenantWebController::class, 'customers'])->middleware('tenant.membership')->name('tenant.customers');
     Route::get('/tenant/services', [TenantWebController::class, 'services'])->middleware('tenant.membership')->name('tenant.services');
     Route::get('/tenant/pricing', [TenantWebController::class, 'pricing'])->middleware('tenant.membership')->name('tenant.pricing');
+    Route::get('/tenant/transactions', [TenantWebController::class, 'transactions'])->middleware('tenant.membership')->name('tenant.transactions');
     Route::get('/tenant/developers', [TenantDeveloperPortalController::class, 'index'])->middleware('tenant.membership')->name('tenant.developers');
     Route::post('/tenant/developers/clients', [TenantDeveloperPortalController::class, 'createClient'])->middleware('tenant.membership')->name('tenant.developers.clients');
     Route::post('/tenant/developers/clients/{client}/keys', [TenantDeveloperPortalController::class, 'createKey'])->middleware('tenant.membership')->name('tenant.developers.keys');
