@@ -20,6 +20,22 @@ final class DepositController
         $amountMinor = ((int) $parts[0] * 100) + (int) str_pad($parts[1] ?? '0', 2, '0');
         abort_if($amountMinor < 50000 || $amountMinor > 500000000, 422, 'Deposit amount must be between ₦500 and ₦5,000,000.');
         $tenant = $request->attributes->get('tenant');
+        if (! $tenant && $request->user()->hasRole('tenant-owner')) {
+            $host = strtolower(rtrim($request->getHost(), '.'));
+            $platformHosts = config('tenancy.platform_hosts', []);
+            $base = strtolower((string) config('tenancy.base_domain'));
+            if ($base !== '') $platformHosts[] = $base;
+            if (in_array($host, $platformHosts, true)) {
+                $owned = $request->user()->tenants()
+                    ->where('tenants.status', 'active')
+                    ->wherePivot('status', 'active')
+                    ->wherePivot('role', 'tenant-owner')
+                    ->get();
+                abort_unless($owned->count() === 1, 409, 'Your approved reseller workspace could not be identified.');
+                $tenant = $owned->first();
+                $request->attributes->set('tenant', $tenant);
+            }
+        }
         if ($tenant) {
             abort_unless($tenant->status === 'active' && $entitlements->allows((int) $tenant->id, 'vtu_enabled'), 402, 'This reseller plan does not currently permit customer wallet funding or purchases.');
             $isTenantMember = $request->user()->tenants()->whereKey($tenant->id)->wherePivot('status', 'active')->exists();
