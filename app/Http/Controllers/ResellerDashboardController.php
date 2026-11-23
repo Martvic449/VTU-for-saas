@@ -12,6 +12,19 @@ final class ResellerDashboardController
         $user = $request->user();
         abort_unless($user && $user->hasRole('tenant-owner'), 403);
 
+        $approvedWorkspaces = $user->tenants()
+            ->where('tenants.status', 'active')
+            ->wherePivot('status', 'active')
+            ->wherePivot('role', 'tenant-owner')
+            ->get();
+
+        // Do not leave an approved reseller on the onboarding-only screen.
+        // The tenant membership middleware resolves this workspace securely
+        // on the platform host when its assigned subdomain is not yet live.
+        if ($approvedWorkspaces->count() === 1) {
+            return redirect()->route('tenant.dashboard');
+        }
+
         $applications = DB::table('tenant_user')
             ->join('tenants', 'tenants.id', '=', 'tenant_user.tenant_id')
             ->leftJoin('tenant_domains', function ($join) {
