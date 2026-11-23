@@ -69,7 +69,7 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->middleware('auth')
 
 Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(function (): void {
     Route::get('/dashboard', CustomerDashboardController::class)->name('dashboard');
-    Route::get('/reseller/dashboard', [\\App\\Http\\Controllers\\ResellerDashboardController::class, '__invoke'])->name('reseller.dashboard');
+    Route::get('/reseller/dashboard', [\App\Http\Controllers\ResellerDashboardController::class, '__invoke'])->name('reseller.dashboard');
     Route::get('/account/activity', [CustomerDashboardController::class, 'activity'])->name('customer.activity');
     Route::get('/customer/dashboard', [TenantCustomerController::class, 'dashboard'])->name('tenant.customer.dashboard');
     Route::post('/customer/join', [TenantCustomerController::class, 'join'])->middleware('throttle:5,1')->name('tenant.customer.join');
