@@ -122,3 +122,22 @@ it('refuses VTpass catalogue discovery with live credentials or an untrusted end
     expect(fn () => (new \App\Services\Providers\VtpassReadOnlyCatalogueClient())->get($provider, 'service-categories'))
         ->toThrow(RuntimeException::class);
 });
+
+
+it('uses the selected VTpass catalogue variation and supplier amount when purchasing a mapped product', function () {
+    $provider = new Provider(['environment' => 'sandbox', 'settings' => ['base_url' => 'https://sandbox.vtpass.com/api'],
+        'credentials_encrypted' => ['api_key' => 'sandbox-api-key', 'secret_key' => 'sandbox-secret', 'public_key' => 'sandbox-public']]);
+    Http::fake(['https://sandbox.vtpass.com/api/pay' => Http::response([
+        'code' => '000', 'content' => ['transactions' => ['status' => 'delivered', 'transactionId' => 'VP-VARIATION-1']],
+    ], 200)]);
+
+    $result = (new VtpassVtuProvider($provider))->purchase('mtn_data', ['phone' => '08011111111', '_provider_mapping' => [
+        'service_id' => 'mtn-data', 'variation_code' => 'mtn-100mb-100', 'supplier_amount' => '100.00',
+    ]], '202611241455VARIATIONTEST1');
+
+    expect($result['outcome'])->toBe('successful');
+    Http::assertSent(fn ($request) => $request->url() === 'https://sandbox.vtpass.com/api/pay'
+        && $request['serviceID'] === 'mtn-data'
+        && $request['variation_code'] === 'mtn-100mb-100'
+        && $request['amount'] === '100.00');
+});

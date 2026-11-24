@@ -28,6 +28,8 @@ final class VtpassVtuProvider implements VtuProvider
             if (is_string($source) && array_key_exists($source, $payload)) $body[$target] = $payload[$source];
             elseif (! is_string($source)) $body[$target] = $source;
         }
+        if (isset($mapping['variation_code']) && ! isset($body['variation_code'])) $body['variation_code'] = $mapping['variation_code'];
+        if (isset($mapping['supplier_amount']) && ! isset($body['amount'])) $body['amount'] = $mapping['supplier_amount'];
         if (isset($payload['amount']) && ! isset($body['amount'])) $body['amount'] = $payload['amount'];
         if (isset($payload['phone']) && ! isset($body['phone'])) $body['phone'] = $payload['phone'];
         if (isset($payload['variation_code']) && ! isset($body['variation_code'])) $body['variation_code'] = $payload['variation_code'];

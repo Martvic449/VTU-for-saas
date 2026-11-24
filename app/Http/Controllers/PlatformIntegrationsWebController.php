@@ -125,6 +125,10 @@ final class PlatformIntegrationsWebController
                 $serviceCode = (string) DB::table('service_catalogue')->where('id', $record->service_catalogue_id)->value('service_code');
                 $serviceId = $mapping['service_id'] ?? data_get($provider->settings, 'service_ids.'.$serviceCode);
                 abort_unless(is_string($serviceId) && $serviceId !== '', 422, 'VTpass mapping requires the exact service_id from the official VTpass catalogue.');
+                if (($mapping['catalogue_snapshot']['resource'] ?? null) === 'service-variations') {
+                    abort_unless(is_string($mapping['variation_code'] ?? null) && $mapping['variation_code'] !== '', 422,
+                        'VTpass product variations require the exact variation_code returned by the supplier catalogue.');
+                }
             } elseif ($provider->adapter === 'smeplug') {
                 abort_unless(isset($mapping['network_id']) && is_numeric($mapping['network_id']) && (int) $mapping['network_id'] > 0, 422,
                     'SMEPlug mapping requires the documented network_id (1=MTN, 2=Airtel, 3=9Mobile, 4=Glo).');
@@ -135,6 +139,9 @@ final class PlatformIntegrationsWebController
             }
         }
         if ($type === 'service' && $data['status'] === 'active') {
+            $serviceRecord = DB::table('service_catalogue')->where('id', $id)->first();
+            $schema = json_decode((string) ($serviceRecord->validation_schema ?? ''), true);
+            abort_unless(is_array($schema) && count($schema) > 0, 409, 'A service needs a non-empty validation schema before activation.');
             $mapped = DB::table('provider_services')->join('providers','providers.id','=','provider_services.provider_id')->where('service_catalogue_id',$id)->where('provider_services.status','active')->where('providers.status','active')->where('providers.environment',config('providers.environment','sandbox'))->exists();
             $priced = DB::table('pricing_rules')->where('service_catalogue_id',$id)->whereNull('tenant_id')->where('status','active')->where('effective_from','<=',now())->where(function($q){$q->whereNull('effective_until')->orWhere('effective_until','>',now());})->exists();
             abort_unless($mapped && $priced, 409, 'A service needs an active provider mapping and effective platform price before activation.');
@@ -233,6 +240,12 @@ final class PlatformIntegrationsWebController
                     $flattened = [];
                     foreach ($items as $networkKey => $plans) {
                         if (! is_array($plans)) continue;
+                        // Some SMEPlug responses are a flat list of plans; others group plans by network ID.
+                        if (isset($plans['id']) || isset($plans['plan_id'])) {
+                            $plans['network_id'] = $plans['network_id'] ?? null;
+                            $flattened[] = $plans;
+                            continue;
+                        }
                         foreach ($plans as $plan) {
                             if (is_array($plan)) {
                                 $plan['network_id'] = $plan['network_id'] ?? (is_numeric($networkKey) ? (int) $networkKey : null);
