@@ -36,7 +36,25 @@ final class HelpCentreController
         if ($request->filled('category')) $query->where('knowledge_categories.slug', $request->string('category')->toString());
         $articles = $query->orderByDesc('knowledge_articles.published_at')->paginate(12)->withQueryString();
         $categories = DB::table('knowledge_categories')->orderBy('sort_order')->orderBy('name')->get();
-        return view('support.knowledge-index', compact('articles', 'categories', 'audience'));
+
+        $dismissed = (array) $request->session()->get('dismissed_announcements', []);
+        $tenant = $request->attributes->get('tenant');
+        $announcements = DB::table('platform_announcements')
+            ->where('status', 'published')
+            ->whereIn('audience', [$audience, 'both'])
+            ->where(function ($q) { $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()); })
+            ->where(function ($q) { $q->whereNull('ends_at')->orWhere('ends_at', '>=', now()); })
+            ->where(function ($q) use ($request) { $q->whereNull('user_id')->orWhere('user_id', $request->user()->id); })
+            ->where(function ($q) use ($tenant) {
+                if ($tenant) $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
+                else $q->whereNull('tenant_id');
+            })
+            ->whereNotIn('id', $dismissed)
+            ->orderByRaw("CASE priority WHEN 'critical' THEN 0 WHEN 'important' THEN 1 ELSE 2 END")
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('support.knowledge-index', compact('articles', 'categories', 'audience', 'announcements'));
     }
 
     public function show(Request $request, string $slug)
