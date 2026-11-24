@@ -17,27 +17,28 @@ final class SubscriptionEntitlementService
             $tenantIsActive = DB::table('tenants')->where('id', $tenantId)->where('status', 'active')->exists();
             if ($tenantIsActive) {
                 DB::transaction(function () use ($tenantId): void {
-                    if (DB::table('subscriptions')->where('tenant_id', $tenantId)->exists()) return;
+                    // Serialize first-time provisioning for this tenant.
+                    $tenant = DB::table('tenants')->where('id', $tenantId)->lockForUpdate()->first();
+                    if (! $tenant || $tenant->status !== 'active' || DB::table('subscriptions')->where('tenant_id', $tenantId)->exists()) return;
 
                     $now = now();
+                    DB::table('plans')->insertOrIgnore([
+                        'code' => 'sandbox-starter',
+                        'name' => 'Sandbox Starter',
+                        'price_minor' => 0,
+                        'currency' => 'NGN',
+                        'billing_interval' => 'month',
+                        'entitlements' => json_encode([
+                            'vtu_enabled' => true,
+                            'api_enabled' => true,
+                            'sandbox_only' => true,
+                        ]),
+                        'status' => 'active',
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
                     $planId = DB::table('plans')->where('code', 'sandbox-starter')->value('id');
-                    if (! $planId) {
-                        $planId = DB::table('plans')->insertGetId([
-                            'code' => 'sandbox-starter',
-                            'name' => 'Sandbox Starter',
-                            'price_minor' => 0,
-                            'currency' => 'NGN',
-                            'billing_interval' => 'month',
-                            'entitlements' => json_encode([
-                                'vtu_enabled' => true,
-                                'api_enabled' => true,
-                                'sandbox_only' => true,
-                            ]),
-                            'status' => 'active',
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]);
-                    }
+                    if (! $planId) return;
 
                     DB::table('subscriptions')->insert([
                         'tenant_id' => $tenantId,
