@@ -113,6 +113,20 @@
 <body><div class="shell">
 @if(auth()->check())
 @php($user=auth()->user())
+@php($tenantWorkspace = request()->attributes->get('tenant'))
+@if($user->hasRole('tenant-owner') && !$tenantWorkspace)
+  @php($currentHost = strtolower(rtrim(request()->getHost(), '.')))
+  @php($platformHosts = config('tenancy.platform_hosts', []))
+  @php($baseDomain = strtolower((string) config('tenancy.base_domain')))
+  @if($baseDomain !== '') @php($platformHosts[] = $baseDomain) @endif
+  @if(in_array($currentHost, $platformHosts, true))
+    @php($ownedWorkspaces = $user->tenants()->where('tenants.status', 'active')->wherePivot('status', 'active')->wherePivot('role', 'tenant-owner')->get())
+    @if($ownedWorkspaces->count() === 1)
+      @php($tenantWorkspace = $ownedWorkspaces->first())
+      @php(request()->attributes->set('tenant', $tenantWorkspace))
+    @endif
+  @endif
+@endif
 @php($workspaceHome = $user->hasRole('tenant-owner') ? (request()->attributes->get('tenant') ? route('tenant.dashboard') : route('reseller.dashboard')) : ($user->hasAnyRole(['super-admin','operations-admin','finance-admin','kyc-reviewer']) ? route('platform.dashboard') : route('dashboard')))
 <div class="app-shell">
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeAppSidebar()" aria-hidden="true"></div>
@@ -138,7 +152,7 @@
         <a href="{{ route('tenant.developers') }}"><i class="side-dot"></i>API clients & keys</a>
         <a href="{{ route('tenant.developers') }}#webhooks"><i class="side-dot"></i>Webhooks</a>
         <a href="{{ route('tenant.developers') }}#api-activity"><i class="side-dot"></i>API activity</a>
-        <a href="{{ route('reseller.dashboard') }}"><i class="side-dot"></i>Application & account</a>
+        <a href="{{ route('reseller.account') }}"><i class="side-dot"></i>Application & account</a>
       @elseif($user->hasRole('tenant-owner'))
         @if(!$user->hasVerifiedEmail())
           <a href="{{ route('verification.notice') }}"><i class="side-dot"></i>Verify email</a>
