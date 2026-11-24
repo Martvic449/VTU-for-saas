@@ -83,3 +83,42 @@ it('reads SMEPlug network and data-plan catalogues through the documented read-o
         ->and($client->get($provider, 'data-plans')['data']['1'][0]['id'])->toBe(123);
     Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer smeplug-private-key'));
 });
+
+
+it('retrieves VTpass service categories, services and variations using sandbox GET authentication', function () {
+    $provider = new Provider([
+        'adapter' => 'vtpass',
+        'environment' => 'sandbox',
+        'credentials_encrypted' => ['api_key' => 'vt-api', 'public_key' => 'vt-public', 'secret_key' => 'vt-secret'],
+        'settings' => ['base_url' => 'https://sandbox.vtpass.com/api'],
+    ]);
+    Http::fake([
+        'https://sandbox.vtpass.com/api/service-categories' => Http::response([
+            'response_description' => '000', 'content' => [['identifier' => 'data', 'name' => 'Data Services']],
+        ], 200),
+        'https://sandbox.vtpass.com/api/services*' => Http::response([
+            'response_description' => '000', 'content' => [['serviceID' => 'mtn-data', 'name' => 'MTN Data', 'product_type' => 'variation']],
+        ], 200),
+        'https://sandbox.vtpass.com/api/service-variations*' => Http::response([
+            'response_description' => '000', 'content' => ['serviceID' => 'mtn-data', 'variations' => [
+                ['variation_code' => 'mtn-100', 'name' => 'MTN 100MB', 'variation_amount' => '100.00', 'fixedPrice' => 'Yes'],
+            ]],
+        ], 200),
+    ]);
+
+    $client = new \App\Services\Providers\VtpassReadOnlyCatalogueClient();
+    expect($client->get($provider, 'service-categories')['content'][0]['identifier'])->toBe('data')
+        ->and($client->get($provider, 'services', 'data')['content'][0]['serviceID'])->toBe('mtn-data')
+        ->and($client->get($provider, 'service-variations', 'mtn-data')['content']['variations'][0]['variation_code'])->toBe('mtn-100');
+
+    Http::assertSent(fn ($request) => $request->url() === 'https://sandbox.vtpass.com/api/services?identifier=data'
+        && $request->hasHeader('api-key', 'vt-api') && $request->hasHeader('public-key', 'vt-public'));
+});
+
+it('refuses VTpass catalogue discovery with live credentials or an untrusted endpoint', function () {
+    $provider = new Provider(['adapter' => 'vtpass', 'environment' => 'live',
+        'credentials_encrypted' => ['api_key' => 'vt-api', 'public_key' => 'vt-public'],
+        'settings' => ['base_url' => 'https://vtpass.com/api']]);
+    expect(fn () => (new \App\Services\Providers\VtpassReadOnlyCatalogueClient())->get($provider, 'service-categories'))
+        ->toThrow(RuntimeException::class);
+});

@@ -82,6 +82,7 @@ final class PlatformIntegrationsWebController
     {
         abort_unless($request->user()->hasRole('super-admin'),403);
         $data=$request->validate(['provider_id'=>['required','exists:providers,id'],'service_catalogue_id'=>['required','exists:service_catalogue,id'],'provider_product_code'=>['required','string','max:100'],'priority'=>['required','integer','min:1','max:65535'],'mapping_json'=>['nullable','json']]);
+        abort_if(DB::table('provider_services')->where('provider_id',$data['provider_id'])->where('service_catalogue_id',$data['service_catalogue_id'])->where('provider_product_code',$data['provider_product_code'])->exists(),409,'This supplier product is already mapped to the selected platform service.');
         $mappingObject = isset($data['mapping_json']) && trim($data['mapping_json']) !== '' ? json_decode($data['mapping_json']) : (object) [];
         abort_unless(is_object($mappingObject),422,'Provider mapping must be a JSON object.');
         $mapping = (array) $mappingObject;
@@ -110,7 +111,13 @@ final class PlatformIntegrationsWebController
             }
             abort_unless(($data['environment_verified'] ?? null) === '1' || ($data['environment_verified'] ?? null) === true, 422, 'Confirm that this provider environment has been tested against the supplier documentation.');
         }
+        if ($type === 'provider' && $data['status'] === 'active') {
+            abort_unless($record->last_health_check_at !== null, 409, 'Retrieve the real supplier sandbox catalogue successfully before activating this provider connection.');
+        }
         if ($type === 'mapping' && $data['status'] === 'active') {
+            $mapping = is_array($record->mapping) ? $record->mapping : (json_decode($record->mapping ?: '{}', true) ?: []);
+            abort_unless(! empty($mapping['catalogue_verified_at']) && ! empty($mapping['catalogue_snapshot']['resource']), 409,
+                'This mapping was not created from a successful supplier catalogue retrieval. Fetch the real supplier item and map it from the catalogue results first.');
             $provider = Provider::query()->where('id', $record->provider_id)->where('status','active')->where('environment',config('providers.environment','sandbox'))->first();
             abort_unless($provider, 409, 'Activate a provider in the configured environment before activating its mapping.');
             $mapping = is_array($record->mapping) ? $record->mapping : (json_decode($record->mapping ?: '{}', true) ?: []);
@@ -195,22 +202,168 @@ final class PlatformIntegrationsWebController
         return back()->with('status','Provider updated and deactivated. Run a fresh sandbox catalogue check before reactivation.');
     }
 
-    public function inspectSupplierCatalogue(Request $request, int $provider, string $resource, \App\Services\Providers\SmeplugReadOnlyClient $client, AuditLogger $audit): RedirectResponse
+    public function inspectSupplierCatalogue(
+        Request $request,
+        int $provider,
+        string $resource,
+        \App\Services\Providers\SmeplugReadOnlyClient $smeplugClient,
+        \App\Services\Providers\VtpassReadOnlyCatalogueClient $vtpassClient,
+        AuditLogger $audit
+    ): RedirectResponse {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        abort_unless(in_array($resource, ['networks', 'data-plans', 'service-categories', 'services', 'service-variations'], true), 404);
+        $record = Provider::findOrFail($provider);
+        abort_unless($record->environment === 'sandbox', 409, 'Catalogue discovery is restricted to sandbox credentials.');
+        $identifier = $request->validate(['identifier' => ['nullable', 'string', 'max:100']])['identifier'] ?? null;
+
+        try {
+            if ($record->adapter === 'vtpass') {
+                abort_unless(in_array($resource, ['service-categories', 'services', 'service-variations'], true), 422, 'This catalogue resource is not supported by VTpass.');
+                if ($resource !== 'service-categories') abort_unless(is_string($identifier) && preg_match('/^[A-Za-z0-9_-]{1,100}$/', $identifier), 422, 'Select a valid supplier category or service ID first.');
+                $payload = $vtpassClient->get($record, $resource, $identifier);
+                $items = match ($resource) {
+                    'service-categories', 'services' => data_get($payload, 'content', []),
+                    'service-variations' => data_get($payload, 'content.variations', data_get($payload, 'content.varations', [])),
+                };
+            } elseif ($record->adapter === 'smeplug') {
+                abort_unless(in_array($resource, ['networks', 'data-plans'], true), 422, 'This catalogue resource is not supported by SMEPlug.');
+                $payload = $smeplugClient->get($record, $resource);
+                $items = data_get($payload, 'data', []);
+                if ($resource === 'data-plans' && is_array($items)) {
+                    $flattened = [];
+                    foreach ($items as $networkKey => $plans) {
+                        if (! is_array($plans)) continue;
+                        foreach ($plans as $plan) {
+                            if (is_array($plan)) {
+                                $plan['network_id'] = $plan['network_id'] ?? (is_numeric($networkKey) ? (int) $networkKey : null);
+                                $flattened[] = $plan;
+                            }
+                        }
+                    }
+                    $items = $flattened;
+                }
+            } else {
+                abort(422, 'Catalogue discovery is not available for this provider adapter.');
+            }
+
+            abort_unless(is_array($items), 502, 'Supplier returned an unexpected catalogue structure.');
+            $items = array_values(array_filter($items, 'is_array'));
+            $record->forceFill(['last_health_check_at' => now()])->save();
+            $catalogue = [
+                'provider_id' => $record->id,
+                'provider' => $record->name,
+                'adapter' => $record->adapter,
+                'environment' => $record->environment,
+                'resource' => $resource,
+                'identifier' => $identifier,
+                'fetched_at' => now()->toIso8601String(),
+                'items' => $items,
+                'payload' => $payload,
+            ];
+            $request->session()->put('supplier_catalogue', $catalogue);
+            $audit->record('provider.catalogue_checked', null, Provider::class, (string) $record->id,
+                'Read-only supplier catalogue request completed', ['resource' => $resource, 'identifier' => $identifier, 'item_count' => count($items), 'environment' => $record->environment]);
+            return back()->with('status', 'Supplier catalogue retrieved successfully: '.count($items).' actual items returned.');
+        } catch (\Throwable $exception) {
+            $request->session()->forget('supplier_catalogue');
+            $audit->record('provider.catalogue_check_failed', null, Provider::class, (string) $record->id,
+                'Read-only supplier catalogue request failed', ['resource' => $resource, 'identifier' => $identifier, 'error' => substr($exception->getMessage(), 0, 240)]);
+            return back()->withErrors(['supplier_catalogue' => 'Supplier request failed: '.$exception->getMessage()]);
+        }
+    }
+
+    public function mapSupplierCatalogueItem(Request $request, int $provider, AuditLogger $audit): RedirectResponse
     {
         abort_unless($request->user()->hasRole('super-admin'), 403);
-        abort_unless(in_array($resource, ['networks','data-plans'], true), 404);
+        $data = $request->validate([
+            'item_index' => ['required', 'integer', 'min:0'],
+            'service_catalogue_id' => ['required', 'integer', 'exists:service_catalogue,id'],
+            'priority' => ['required', 'integer', 'min:1', 'max:65535'],
+            'mapping_json' => ['nullable', 'json'],
+        ]);
+        $catalogue = $request->session()->get('supplier_catalogue');
+        abort_unless(is_array($catalogue) && (int) ($catalogue['provider_id'] ?? 0) === $provider, 409,
+            'The supplier catalogue snapshot is missing or belongs to another connection. Fetch it again before mapping.');
+        abort_unless(($catalogue['environment'] ?? null) === 'sandbox', 409, 'Only a sandbox catalogue snapshot can be mapped through this workflow.');
         $record = Provider::findOrFail($provider);
-        abort_unless($record->adapter === 'smeplug', 422, 'Read-only catalogue discovery is currently supported for SMEPlug connections.');
-        abort_unless($record->environment === 'sandbox', 409, 'Supplier catalogue discovery is restricted to sandbox credentials.');
-        try {
-            $payload = $client->get($record, $resource);
-            $record->forceFill(['last_health_check_at'=>now()])->save();
-            $audit->record('provider.catalogue_checked', null, Provider::class, (string)$record->id, 'Read-only supplier '.$resource.' catalogue request completed', ['resource'=>$resource,'http_success'=>true]);
-            return back()->with('supplier_catalogue', ['provider'=>$record->name,'resource'=>$resource,'payload'=>$payload]);
-        } catch (\Throwable $exception) {
-            $audit->record('provider.catalogue_check_failed', null, Provider::class, (string)$record->id, 'Read-only supplier catalogue request failed', ['resource'=>$resource,'error'=>substr($exception->getMessage(),0,240)]);
-            return back()->withErrors(['supplier_catalogue'=>'Supplier request failed: '.$exception->getMessage()]);
+        abort_unless($record->adapter === ($catalogue['adapter'] ?? null) && $record->environment === 'sandbox', 409,
+            'The supplier connection changed after catalogue retrieval. Fetch the catalogue again.');
+        $item = $catalogue['items'][$data['item_index']] ?? null;
+        abort_unless(is_array($item), 422, 'The selected supplier catalogue item is no longer available.');
+
+        $resource = $catalogue['resource'] ?? '';
+        $mapping = [];
+        $productCode = '';
+        if ($record->adapter === 'vtpass') {
+            if ($resource === 'services') {
+                $serviceId = (string) ($item['serviceID'] ?? '');
+                $productCode = $serviceId;
+            } elseif ($resource === 'service-variations') {
+                $serviceId = (string) ($catalogue['identifier'] ?? '');
+                $productCode = (string) ($item['variation_code'] ?? '');
+                $mapping['variation_code'] = $productCode;
+                if (isset($item['variation_amount']) && is_numeric($item['variation_amount'])) {
+                    $mapping['supplier_amount'] = (string) $item['variation_amount'];
+                }
+                $mapping['fixed_price'] = (string) ($item['fixedPrice'] ?? '');
+            } else {
+                abort(422, 'Select a VTpass service or variation, not a category, to create a product mapping.');
+            }
+            abort_unless($serviceId !== '' && $productCode !== '', 422, 'VTpass did not return the required service or product code.');
+            $mapping['service_id'] = $serviceId;
+            $mapping['catalogue_resource'] = $resource;
+        } elseif ($record->adapter === 'smeplug') {
+            if ($resource === 'networks') {
+                $networkId = $item['id'] ?? $item['network_id'] ?? null;
+                abort_unless(is_numeric($networkId) && (int) $networkId > 0, 422, 'The selected SMEPlug network has no valid supplier network ID.');
+                $productCode = (string) $networkId;
+                $mapping = ['network_id' => (int) $networkId, 'smeplug_endpoint' => 'airtime/purchase', 'catalogue_resource' => $resource];
+            } elseif ($resource === 'data-plans') {
+                $planId = $item['id'] ?? $item['plan_id'] ?? null;
+                $networkId = $item['network_id'] ?? null;
+                abort_unless(is_numeric($planId) && (int) $planId > 0 && is_numeric($networkId) && (int) $networkId > 0, 422,
+                    'The selected SMEPlug plan must contain its actual plan ID and network ID.');
+                $productCode = (string) $planId;
+                $mapping = ['network_id' => (int) $networkId, 'plan_id' => (int) $planId, 'smeplug_endpoint' => 'data/purchase', 'catalogue_resource' => $resource];
+            } else {
+                abort(422, 'Select an SMEPlug network or data plan to create a product mapping.');
+            }
+        } else {
+            abort(422, 'This provider adapter cannot create catalogue mappings.');
         }
+
+        $service = DB::table('service_catalogue')->where('id', $data['service_catalogue_id'])->first();
+        abort_unless($service, 404);
+        if ($record->adapter === 'smeplug') {
+            abort_unless(($resource === 'networks' && $service->category === 'airtime') || ($resource === 'data-plans' && $service->category === 'data'), 422,
+                'Choose a platform service category that matches the supplier catalogue item.');
+        }
+        $extra = isset($data['mapping_json']) && trim($data['mapping_json']) !== '' ? json_decode($data['mapping_json'], true) : [];
+        abort_unless(is_array($extra), 422, 'Additional mapping settings must be a JSON object.');
+        $mapping = array_merge($extra, $mapping);
+        $mapping['catalogue_verified_at'] = now()->toIso8601String();
+        $mapping['catalogue_snapshot'] = [
+            'resource' => $resource,
+            'identifier' => $catalogue['identifier'] ?? null,
+            'item_name' => (string) ($item['name'] ?? $item['ServiceName'] ?? $productCode),
+        ];
+
+        $duplicate = DB::table('provider_services')->where('provider_id', $provider)
+            ->where('service_catalogue_id', $service->id)->where('provider_product_code', $productCode)->exists();
+        abort_if($duplicate, 409, 'This supplier product is already mapped to the selected platform service.');
+        $mappingId = DB::table('provider_services')->insertGetId([
+            'provider_id' => $provider,
+            'service_catalogue_id' => $service->id,
+            'provider_product_code' => $productCode,
+            'status' => 'inactive',
+            'priority' => $data['priority'],
+            'mapping' => json_encode($mapping),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $audit->record('provider.mapping_created_from_catalogue', null, 'provider_services', (string) $mappingId,
+            'Supplier catalogue item mapped to a platform service', ['provider_id' => $provider, 'service_catalogue_id' => $service->id, 'provider_product_code' => $productCode, 'resource' => $resource]);
+        return back()->with('status', 'Supplier product mapped successfully and saved inactive. Review its details and pricing before activation.');
     }
 
     public function updateService(Request $request, int $service, AuditLogger $audit): RedirectResponse

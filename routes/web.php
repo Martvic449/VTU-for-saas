@@ -119,6 +119,7 @@ Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(
     Route::post('/platform/integrations/providers', [PlatformIntegrationsWebController::class, 'createProvider'])->name('platform.integrations.providers');
     Route::put('/platform/integrations/providers/{provider}', [PlatformIntegrationsWebController::class, 'updateProvider'])->name('platform.integrations.providers.update');
     Route::post('/platform/integrations/providers/{provider}/catalogue/{resource}', [PlatformIntegrationsWebController::class, 'inspectSupplierCatalogue'])->name('platform.integrations.providers.catalogue');
+    Route::post('/platform/integrations/providers/{provider}/catalogue/map', [PlatformIntegrationsWebController::class, 'mapSupplierCatalogueItem'])->name('platform.integrations.providers.catalogue.map');
     Route::put('/platform/integrations/services/{service}', [PlatformIntegrationsWebController::class, 'updateService'])->name('platform.integrations.services.update');
     Route::put('/platform/integrations/mappings/{mapping}', [PlatformIntegrationsWebController::class, 'updateMapping'])->name('platform.integrations.mappings.update');
     Route::patch('/platform/integrations/pricing/{pricing}/end', [PlatformIntegrationsWebController::class, 'closePricingRule'])->name('platform.integrations.pricing.end');
