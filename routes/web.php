@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
 Route::get('/', StorefrontController::class)->name('home');
+Route::get('/docs/openapi.yaml', function () { return response()->file(public_path('docs/openapi.yaml'), ['Content-Type' => 'application/yaml; charset=UTF-8']); })->name('docs.openapi');
 Route::view('/get-started', 'auth.choose-account')->name('account.type');
 Route::view('/privacy-policy', 'legal.privacy')->name('legal.privacy');
 Route::view('/terms-and-conditions', 'legal.terms')->name('legal.terms');
@@ -69,6 +70,7 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->middleware('auth')
 Route::middleware(['auth', 'active.user', 'privileged.mfa', 'verified'])->group(function (): void {
     Route::get('/dashboard', CustomerDashboardController::class)->name('dashboard');
     Route::get('/reseller/dashboard', [\App\Http\Controllers\ResellerDashboardController::class, '__invoke'])->name('reseller.dashboard');
+    Route::get('/reseller/account', [\App\Http\Controllers\ResellerDashboardController::class, 'account'])->name('reseller.account');
     Route::get('/account/activity', [CustomerDashboardController::class, 'activity'])->name('customer.activity');
     Route::get('/customer/dashboard', [TenantCustomerController::class, 'dashboard'])->name('tenant.customer.dashboard');
     Route::post('/customer/join', [TenantCustomerController::class, 'join'])->middleware('throttle:5,1')->name('tenant.customer.join');
