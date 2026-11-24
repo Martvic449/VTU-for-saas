@@ -25,6 +25,15 @@ final class ResellerDashboardController
         $user = $request->user();
         abort_unless($user && $user->hasRole('tenant-owner'), 403);
         $applications = $this->applications((int) $user->id);
+        $approved = $user->tenants()
+            ->where('tenants.status', 'active')
+            ->wherePivot('status', 'active')
+            ->wherePivot('role', 'tenant-owner')
+            ->get();
+
+        if ($approved->count() === 1) {
+            return redirect()->route('tenant.dashboard');
+        }
 
         return view('reseller.dashboard', compact('applications'));
     }
