@@ -58,5 +58,47 @@
     <div class="card" style="margin:18px 0"><h3 style="margin-top:0">Service catalogue</h3><div class="table-wrap"><table><thead><tr><th>Service</th><th>Code</th><th>Category</th><th>Status</th><th>Control</th></tr></thead><tbody>@forelse($services as $service)<tr><td>{{ $service->name }}</td><td>{{ $service->service_code }}</td><td>{{ $service->category }}</td><td><span class="pill {{ $service->status }}">{{ $service->status }}</span></td><td>@if(auth()->user()->hasRole('super-admin'))<form method="post" action="{{ route('platform.integrations.status',['type'=>'service','id'=>$service->id]) }}">@csrf @method('PATCH')<input name="reason" required minlength="8" maxlength="500" placeholder="Reason"><input type="hidden" name="status" value="{{ $service->status==='active'?'inactive':'active' }}"><button class="btn secondary" type="submit">{{ $service->status==='active'?'Deactivate':'Activate' }}</button></form>@endif</td></tr>@empty<tr><td colspan="5">No services configured.</td></tr>@endforelse</tbody></table></div></div>
     <div class="card" style="margin:18px 0"><h3 style="margin-top:0">Provider mappings</h3><div class="table-wrap"><table><thead><tr><th>Provider</th><th>Service</th><th>Supplier product</th><th>Priority</th><th>Status</th><th>Control</th></tr></thead><tbody>@forelse($mappings as $mapping)<tr><td>{{ $mapping->provider_name }}</td><td>{{ $mapping->service_name }}</td><td>{{ $mapping->provider_product_code }}</td><td>{{ $mapping->priority }}</td><td><span class="pill {{ $mapping->status }}">{{ $mapping->status }}</span></td><td>@if(auth()->user()->hasRole('super-admin'))<form method="post" action="{{ route('platform.integrations.status',['type'=>'mapping','id'=>$mapping->id]) }}">@csrf @method('PATCH')<input name="reason" required minlength="8" maxlength="500" placeholder="Reason"><input type="hidden" name="status" value="{{ $mapping->status==='active'?'inactive':'active' }}"><button class="btn secondary" type="submit">{{ $mapping->status==='active'?'Deactivate':'Activate' }}</button></form>@endif</td></tr>@empty<tr><td colspan="6">No mappings configured.</td></tr>@endforelse</tbody></table></div></div>
     <div class="card" style="margin:18px 0"><h3 style="margin-top:0">Current pricing rules</h3><div class="table-wrap"><table><thead><tr><th>Service</th><th>Tenant</th><th>Supplier cost rule</th><th>Cost</th><th>Sell</th><th>Effective from</th><th>Status</th><th>Control</th></tr></thead><tbody>@forelse($pricing as $rule)<tr><td>{{ $rule->service_name }}</td><td>{{ $rule->tenant_name ?? 'Platform' }}</td><td>{{ $rule->provider_name ?? 'Generic / fallback' }}</td><td>₦{{ number_format($rule->cost_minor/100,2) }}</td><td>₦{{ number_format($rule->sell_minor/100,2) }}</td><td>{{ $rule->effective_from }}</td><td><span class="pill {{ $rule->status }}">{{ $rule->status }}</span></td><td>@if(auth()->user()->hasRole('super-admin'))<form method="post" action="{{ route('platform.integrations.status',['type'=>'pricing','id'=>$rule->id]) }}">@csrf @method('PATCH')<input name="reason" required minlength="8" maxlength="500" placeholder="Reason"><input type="hidden" name="status" value="{{ $rule->status==='active'?'inactive':'active' }}"><button class="btn secondary" type="submit">{{ $rule->status==='active'?'Deactivate':'Activate' }}</button></form>@endif</td></tr>@empty<tr><td colspan="8">No pricing rules configured.</td></tr>@endforelse</tbody></table></div></div>
+
+    @if(session('supplier_catalogue'))
+    <section class="card" style="margin:18px 0"><h3>Supplier catalogue response — {{ session('supplier_catalogue.provider') }} / {{ session('supplier_catalogue.resource') }}</h3><p class="muted">Read-only sandbox response. Confirm the exact supplier IDs before creating mappings.</p><pre style="white-space:pre-wrap;overflow:auto;max-height:420px">{{ json_encode(session('supplier_catalogue.payload'), JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) }}</pre></section>
+    @endif
+    <section class="card" style="margin:18px 0"><h3>Supplier connection maintenance</h3><p class="muted">Credentials are write-only: leave a credential blank to retain its currently encrypted value. Any update automatically deactivates the connection until it is rechecked.</p>
+    @foreach($providers as $provider)
+      <div style="border-top:1px solid #ddd;padding:14px 0"><strong>{{ $provider->name }}</strong> <span class="pill">{{ $provider->environment }} / {{ $provider->status }}</span>
+        @if($provider->adapter==='smeplug' && $provider->environment==='sandbox')
+          <form method="post" action="{{ route('platform.integrations.providers.catalogue',['provider'=>$provider->id,'resource'=>'networks']) }}" style="display:inline">@csrf<button class="btn secondary" type="submit">Check networks</button></form>
+          <form method="post" action="{{ route('platform.integrations.providers.catalogue',['provider'=>$provider->id,'resource'=>'data-plans']) }}" style="display:inline">@csrf<button class="btn secondary" type="submit">Fetch data plans</button></form>
+        @endif
+        <form method="post" action="{{ route('platform.integrations.providers.update',$provider->id) }}" style="margin-top:10px">@csrf @method('PUT')
+          <div class="grid"><div class="field"><label>Display name</label><input name="name" value="{{ $provider->name }}" required></div>
+          <div class="field"><label>Environment</label><select name="environment"><option value="sandbox" @selected($provider->environment==='sandbox')>Sandbox</option><option value="live" @selected($provider->environment==='live')>Live</option></select></div></div>
+          <div class="grid"><div class="field"><label>API key (replace only)</label><input type="password" name="api_key" autocomplete="new-password"></div><div class="field"><label>Public key (replace only)</label><input type="password" name="public_key" autocomplete="new-password"></div><div class="field"><label>Secret key (replace only)</label><input type="password" name="secret_key" autocomplete="new-password"></div><div class="field"><label>Private key / API token (replace only)</label><input type="password" name="api_token" autocomplete="new-password"></div></div>
+          <div class="field"><label>Merge supplier settings JSON</label><textarea name="settings_json" rows="3" placeholder="Leave blank to keep current settings"></textarea></div>
+          <button class="btn secondary" type="submit">Update connection (deactivates)</button>
+        </form>
+        <small class="muted">Last read-only check: {{ $provider->last_health_check_at ?? 'Not checked' }}</small>
+      </div>
+    @endforeach
+    </section>
+    <section class="card" style="margin:18px 0"><h3>Maintain service definitions</h3>
+    @foreach($services as $service)
+      <form method="post" action="{{ route('platform.integrations.services.update',$service->id) }}" style="display:grid;grid-template-columns:1fr 2fr 2fr auto;gap:8px;align-items:end;margin:10px 0">@csrf @method('PUT')
+        <div class="field"><label>{{ $service->service_code }}</label><input name="name" value="{{ $service->name }}" required></div>
+        <div class="field"><label>Validation schema JSON</label><textarea name="validation_schema_json" rows="2" required>{{ json_encode($service->validation_schema) }}</textarea></div>
+        <div class="muted">Current status: {{ $service->status }}. Saving returns the service to inactive.</div><button class="btn secondary">Save definition</button>
+      </form>
+    @endforeach
+    </section>
+    <section class="card" style="margin:18px 0"><h3>Maintain supplier product mappings</h3>
+    @foreach($mappings as $mapping)
+      <form method="post" action="{{ route('platform.integrations.mappings.update',$mapping->id) }}" style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:8px;align-items:end;margin:10px 0">@csrf @method('PUT')
+        <div class="muted">{{ $mapping->provider_name }} → {{ $mapping->service_name }}</div>
+        <div class="field"><label>Supplier product ID/code</label><input name="provider_product_code" value="{{ $mapping->provider_product_code }}" required></div>
+        <div class="field"><label>Mapping JSON</label><textarea name="mapping_json" rows="2">{{ json_encode($mapping->mapping) }}</textarea></div>
+        <div><input type="number" name="priority" min="1" max="65535" value="{{ $mapping->priority }}" required><button class="btn secondary">Save mapping</button></div>
+      </form>
+    @endforeach
+    </section>
+
 </div>
 @endsection

@@ -161,4 +161,95 @@ final class PlatformIntegrationsWebController
         $audit->record('pricing_rule.created',$tenantId,'pricing_rules',null,'Pricing rule created',['service_catalogue_id'=>$data['service_catalogue_id'],'sell_minor'=>$data['sell_minor']]);
         return back()->with('status','Pricing rule created.');
     }
+
+    public function updateProvider(Request $request, int $provider, AuditLogger $audit): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        $record = Provider::findOrFail($provider);
+        $data = $request->validate([
+            'name' => ['required','string','max:120'],
+            'environment' => ['required',Rule::in(['sandbox','live'])],
+            'api_key' => ['nullable','string','max:2000'], 'public_key' => ['nullable','string','max:2000'],
+            'secret_key' => ['nullable','string','max:2000'], 'api_token' => ['nullable','string','max:2000'],
+            'settings_json' => ['nullable','json'],
+        ]);
+        $credentials = $record->credentials_encrypted ?? [];
+        foreach (['api_key','public_key','secret_key','api_token'] as $key) {
+            if (isset($data[$key]) && $data[$key] !== '') $credentials[$key] = $data[$key];
+        }
+        $settings = $record->settings ?? [];
+        if (isset($data['settings_json']) && trim($data['settings_json']) !== '') {
+            $decoded = json_decode($data['settings_json'], true);
+            abort_unless(is_array($decoded), 422, 'Settings must be a JSON object.');
+            $settings = array_replace_recursive($settings, $decoded);
+        }
+        if ($record->adapter === 'vtpass') {
+            abort_unless(isset($credentials['api_key'],$credentials['public_key'],$credentials['secret_key']), 422, 'VTpass requires API key, public key and secret key.');
+            $settings['base_url'] = $data['environment'] === 'live' ? 'https://vtpass.com/api' : 'https://sandbox.vtpass.com/api';
+        } elseif ($record->adapter === 'smeplug') {
+            abort_unless(isset($credentials['api_token']), 422, 'SMEPlug private key is required.');
+        }
+        $record->forceFill(['name'=>$data['name'],'environment'=>$data['environment'],'credentials_encrypted'=>$credentials,
+            'settings'=>$settings,'status'=>'inactive','last_health_check_at'=>null])->save();
+        $audit->record('provider.updated', null, Provider::class, (string)$record->id, 'Provider credentials or configuration updated; provider returned to inactive state', ['environment'=>$record->environment]);
+        return back()->with('status','Provider updated and deactivated. Run a fresh sandbox catalogue check before reactivation.');
+    }
+
+    public function inspectSupplierCatalogue(Request $request, int $provider, string $resource, \App\Services\Providers\SmeplugReadOnlyClient $client, AuditLogger $audit): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        abort_unless(in_array($resource, ['networks','data-plans'], true), 404);
+        $record = Provider::findOrFail($provider);
+        abort_unless($record->adapter === 'smeplug', 422, 'Read-only catalogue discovery is currently supported for SMEPlug connections.');
+        abort_unless($record->environment === 'sandbox', 409, 'Supplier catalogue discovery is restricted to sandbox credentials.');
+        try {
+            $payload = $client->get($record, $resource);
+            $record->forceFill(['last_health_check_at'=>now()])->save();
+            $audit->record('provider.catalogue_checked', null, Provider::class, (string)$record->id, 'Read-only supplier '.$resource.' catalogue request completed', ['resource'=>$resource,'http_success'=>true]);
+            return back()->with('supplier_catalogue', ['provider'=>$record->name,'resource'=>$resource,'payload'=>$payload]);
+        } catch (\Throwable $exception) {
+            $audit->record('provider.catalogue_check_failed', null, Provider::class, (string)$record->id, 'Read-only supplier catalogue request failed', ['resource'=>$resource,'error'=>substr($exception->getMessage(),0,240)]);
+            return back()->withErrors(['supplier_catalogue'=>'Supplier request failed: '.$exception->getMessage()]);
+        }
+    }
+
+    public function updateService(Request $request, int $service, AuditLogger $audit): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        $data = $request->validate(['name'=>['required','string','max:120'],'validation_schema_json'=>['required','json']]);
+        $schema = json_decode($data['validation_schema_json'], true);
+        abort_unless(is_array($schema) && count($schema)>0, 422, 'Validation schema must be a non-empty JSON object.');
+        $record = DB::table('service_catalogue')->where('id',$service)->first();
+        abort_unless($record,404);
+        DB::table('service_catalogue')->where('id',$service)->update(['name'=>$data['name'],'validation_schema'=>json_encode($schema),'status'=>'inactive','updated_at'=>now()]);
+        $audit->record('service.updated',null,'service_catalogue',(string)$service,'Service definition updated and returned to inactive state');
+        return back()->with('status','Service definition updated. Recheck mapping and pricing before reactivation.');
+    }
+
+    public function updateMapping(Request $request, int $mapping, AuditLogger $audit): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        $data = $request->validate(['provider_product_code'=>['required','string','max:100'],'priority'=>['required','integer','min:1','max:65535'],'mapping_json'=>['nullable','json']]);
+        $object = isset($data['mapping_json']) && trim($data['mapping_json']) !== '' ? json_decode($data['mapping_json']) : (object)[];
+        abort_unless(is_object($object),422,'Supplier mapping must be a JSON object.');
+        $record = DB::table('provider_services')->where('id',$mapping)->first();
+        abort_unless($record,404);
+        DB::table('provider_services')->where('id',$mapping)->update(['provider_product_code'=>$data['provider_product_code'],'priority'=>$data['priority'],'mapping'=>json_encode((array)$object),'status'=>'inactive','updated_at'=>now()]);
+        $audit->record('provider.mapping_updated',null,'provider_services',(string)$mapping,'Supplier product mapping updated and deactivated');
+        return back()->with('status','Supplier product mapping updated and deactivated. Revalidate it before activation.');
+    }
+
+    public function closePricingRule(Request $request, int $pricing, AuditLogger $audit): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super-admin'), 403);
+        $data = $request->validate(['effective_until'=>['required','date']]);
+        $record = DB::table('pricing_rules')->where('id',$pricing)->first();
+        abort_unless($record,404);
+        abort_if($record->status !== 'active', 409, 'Only active pricing rules can be ended.');
+        abort_if($data['effective_until'] <= $record->effective_from, 422, 'The end date must be after the rule start date.');
+        DB::table('pricing_rules')->where('id',$pricing)->update(['effective_until'=>$data['effective_until'],'updated_at'=>now()]);
+        $audit->record('pricing_rule.ended',$record->tenant_id,'pricing_rules',(string)$pricing,'Pricing rule given an end date',['effective_until'=>$data['effective_until']]);
+        return back()->with('status','Pricing rule end date saved. Previous pricing remains in the audit/history record.');
+    }
+
 }
