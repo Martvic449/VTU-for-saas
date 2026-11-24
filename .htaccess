@@ -4,6 +4,9 @@ Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Route the public OpenAPI document through Laravel; the repository docs/ tree stays blocked.
+    RewriteRule ^docs/openapi\.yaml$ public/index.php [NC,L]
+
     # Never serve Laravel source, dependencies, logs, or repository metadata.
     RewriteRule ^(?:app|bootstrap|config|database|docs|resources|routes|storage|tests|vendor|\.git|\.github)(?:/|$) - [F,NC,L]
 
