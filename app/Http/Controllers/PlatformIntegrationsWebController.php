@@ -205,6 +205,19 @@ final class PlatformIntegrationsWebController
         }
         $record->forceFill(['name'=>$data['name'],'environment'=>$data['environment'],'credentials_encrypted'=>$credentials,
             'settings'=>$settings,'status'=>'inactive','last_health_check_at'=>null])->save();
+
+        // Credential or environment changes invalidate prior supplier-catalogue verification.
+        $existingMappings = DB::table('provider_services')->where('provider_id', $record->id)->get();
+        foreach ($existingMappings as $existingMapping) {
+            $existingData = json_decode((string) ($existingMapping->mapping ?? '{}'), true);
+            $existingData = is_array($existingData) ? $existingData : [];
+            unset($existingData['catalogue_verified_at'], $existingData['catalogue_snapshot']);
+            DB::table('provider_services')->where('id', $existingMapping->id)->update([
+                'status' => 'inactive',
+                'mapping' => json_encode($existingData),
+                'updated_at' => now(),
+            ]);
+        }
         $audit->record('provider.updated', null, Provider::class, (string)$record->id, 'Provider credentials or configuration updated; provider returned to inactive state', ['environment'=>$record->environment]);
         return back()->with('status','Provider updated and deactivated. Run a fresh sandbox catalogue check before reactivation.');
     }
@@ -270,6 +283,7 @@ final class PlatformIntegrationsWebController
                 'resource' => $resource,
                 'identifier' => $identifier,
                 'fetched_at' => now()->toIso8601String(),
+                'health_check_at' => $record->last_health_check_at?->toIso8601String(),
                 'items' => $items,
                 'payload' => $payload,
             ];
@@ -301,6 +315,9 @@ final class PlatformIntegrationsWebController
         $record = Provider::findOrFail($provider);
         abort_unless($record->adapter === ($catalogue['adapter'] ?? null) && $record->environment === 'sandbox', 409,
             'The supplier connection changed after catalogue retrieval. Fetch the catalogue again.');
+        abort_unless($record->last_health_check_at !== null
+            && $record->last_health_check_at->toIso8601String() === ($catalogue['health_check_at'] ?? null), 409,
+            'This catalogue snapshot is stale because the supplier connection was checked or changed again. Fetch the catalogue again.');
         $item = $catalogue['items'][$data['item_index']] ?? null;
         abort_unless(is_array($item), 422, 'The selected supplier catalogue item is no longer available.');
 
@@ -400,7 +417,10 @@ final class PlatformIntegrationsWebController
         abort_unless(is_object($object),422,'Supplier mapping must be a JSON object.');
         $record = DB::table('provider_services')->where('id',$mapping)->first();
         abort_unless($record,404);
-        DB::table('provider_services')->where('id',$mapping)->update(['provider_product_code'=>$data['provider_product_code'],'priority'=>$data['priority'],'mapping'=>json_encode((array)$object),'status'=>'inactive','updated_at'=>now()]);
+        $mappingData = (array) $object;
+        // Editing any supplier ID or mapping field invalidates the original catalogue attestation.
+        unset($mappingData['catalogue_verified_at'], $mappingData['catalogue_snapshot']);
+        DB::table('provider_services')->where('id',$mapping)->update(['provider_product_code'=>$data['provider_product_code'],'priority'=>$data['priority'],'mapping'=>json_encode($mappingData),'status'=>'inactive','updated_at'=>now()]);
         $audit->record('provider.mapping_updated',null,'provider_services',(string)$mapping,'Supplier product mapping updated and deactivated');
         return back()->with('status','Supplier product mapping updated and deactivated. Revalidate it before activation.');
     }
